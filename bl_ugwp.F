@@ -688,8 +688,8 @@ if ( gsl_gwd_ss .eq. 1 ) then
             dvdt(i,k)  = dvdt(i,k) + vtendwave(i,k)
             dtaux3d(i,k) = dtaux3d(i,k) + utendwave(i,k)
             dtauy3d(i,k) = dtauy3d(i,k) + vtendwave(i,k)
-            dusfc(i)   = dusfc(i) - inv_g * utendwave(i,k) * del(i,k)
-            dvsfc(i)   = dvsfc(i) - inv_g * vtendwave(i,k) * del(i,k)
+            dusfc(i)   = dusfc(i) + utendwave(i,k) * del(i,k)
+            dvsfc(i)   = dvsfc(i) + vtendwave(i,k) * del(i,k)
          enddo
          if ( ugwp_diags ) then
             do k = kts,kte
@@ -742,8 +742,8 @@ if ( gsl_gwd_fd .eq. 1 ) THEN
             dvdt(i,k)  = dvdt(i,k) + vtendform(i,k)
             dtaux3d(i,k) = dtaux3d(i,k) + utendform(i,k)
             dtauy3d(i,k) = dtauy3d(i,k) + vtendform(i,k)
-            dusfc(i)   = dusfc(i) - inv_g * utendform(i,k) * del(i,k)
-            dvsfc(i)   = dvsfc(i) - inv_g * vtendform(i,k) * del(i,k)
+            dusfc(i)   = dusfc(i) + utendform(i,k) * del(i,k)
+            dvsfc(i)   = dvsfc(i) + vtendform(i,k) * del(i,k)
          enddo
          if ( ugwp_diags ) then
             do k = kts,kte
@@ -942,6 +942,8 @@ do i = its,ite
          dvdt(i,k)  = dtauy2d_ls(i,k) + dtauy2d_bl(i,k) + dvdt(i,k)
          dtaux3d(i,k) = dtaux3d(i,k) + dtaux2d_ls(i,k) + dtaux2d_bl(i,k)
          dtauy3d(i,k) = dtauy3d(i,k) + dtauy2d_ls(i,k) + dtauy2d_bl(i,k)
+         dusfc(i) = dusfc(i) + (dtaux2d_ls(i,k)+dtaux2d_bl(i,k))*del(i,k)
+         dvsfc(i) = dvsfc(i) + (dtauy2d_ls(i,k)+dtauy2d_bl(i,k))*del(i,k)
       enddo                                                          
 
       if ( ugwp_diags ) then
@@ -961,6 +963,10 @@ do i = its,ite
 
 enddo    ! i = its,ite
 
+do i = its,ite
+   dusfcg(i) = -inv_g * dusfc(i)
+   dvsfcg(i) = -inv_g * dvsfc(i)
+enddo
                                                   
 if ( ugwp_diags ) then
 !  Finalize dusfc and dvsfc diagnoses
