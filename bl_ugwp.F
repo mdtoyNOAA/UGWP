@@ -263,7 +263,7 @@ contains
       clf_coeff = 3.4E+07, &  ! "effective length" coeff or large-scale GWD
                               ! Note:  Can be used as "tuning knob"
       a1_coeff = 0.00026615161, &  ! Coefficient for TOFD from Beljaars et al. (2004)
-      a2_coeff = 0.005363, &       !  ""
+      a2_coeff = 0.005363          !  ""
 !-------------------------------------------------------------------------------
 !
 ! constants                                                         
