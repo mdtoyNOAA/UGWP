@@ -232,6 +232,8 @@ contains
                                                          thx, thvx
    real(kind=kind_phys)                               :: a1, a2, wsp, H_efold, hpbl2, &
                                                          tvcon
+   real(kind=kind_phys), parameter                    :: coeff_fd = 6.325e-3_kind_phys   ! TOFD coefficient group
+   real(kind=kind_phys)                               :: alpha_fd   ! alpha coefficient from Beljaars et al. (2004)
    integer                                            :: kpbl2,kvar
 !
 ! variables for flow-blocking drag
@@ -262,7 +264,6 @@ contains
                               ! Note:  Can be used as "tuning knob"
       a1_coeff = 0.00026615161, &  ! Coefficient for TOFD from Beljaars et al. (2004)
       a2_coeff = 0.005363, &       !  ""
-      TOFD_coeff = 0.0759
 !-------------------------------------------------------------------------------
 !
 ! constants                                                         
@@ -294,6 +295,9 @@ enddo
 
 ! Remove ss_tapering
 ss_taper(:) = 1.
+
+! Alpha coefficient for TOFD
+alpha_fd = 12._kind_phys
 
 !
 ! calculate length of grid for flow-blocking drag
@@ -726,8 +730,10 @@ if ( gsl_gwd_fd .eq. 1 ) THEN
             H_efold = 1500.
             do k=kts,kte
                wsp=sqrt(u1(i,k)**2 + v1(i,k)**2)
-               ! alpha*beta*Cmd*Ccorr*2.109 = 12.*1.*0.005*0.6*2.109 = 0.0759
-               var_temp = TOFD_coeff*EXP(-(zl(i,k)/H_efold)**1.5)*a2*          &
+               ! Note:  In Beljaars et al. (2004):
+               ! alpha_fd*beta*Cmd*Ccorr*2.109 = 12.*1.*0.005*0.6*2.109 = 0.0759
+               ! lump beta*Cmd*Ccorr*2.109 into 1.*0.005*0.6*2.109 = coeff_fd ~ 6.325e-3_kind_phys
+               var_temp = alpha_fd*coeff_fd*EXP(-(zl(i,k)/H_efold)**1.5)*a2*       &
                                  zl(i,k)**(-1.2)*ss_taper(i) ! this is greater than zero
                !  Note:  This is a semi-implicit treatment of the time differencing
                !  per Beljaars et al. (2004, QJRMS)
