@@ -1,2 +1,2 @@
-# GSL_gwd_physics
-This repository contains gravity wave physics parameterizations developed at NOAA/GSL.
+# UGWP
+This repository contains the "Unified Gravity Wave Physics (UGWP)" parameterizations developed at NOAA.
