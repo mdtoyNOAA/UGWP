@@ -22,7 +22,7 @@ contains
                      dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd,                      &
                      ugwp_diags,uproj, vproj,                                  &
                      t1, q1,                                                   &
-                     prsi, prsl, prslk, zl, hpbl, kpbl, br1, xland1,           &
+                     prsi, prsl, prslk, zl, dz, hpbl, kpbl, br1, xland1,       &
                      var, oc1,                                                 &
                      oa2d1, oa2d2,                                             &
                      oa2d3, oa2d4,                                             &
@@ -88,6 +88,7 @@ contains
 !    deltim           - time step (s)                                      
 !    del              - positive increment of pressure across layer (pa)
 !    prslk, zl, prsl, prsi    - pressure and height variables
+!    dz               - layer thickness (m)
 !    hpbl             - PBL height (m)
 !    kpbl             - index level of PBL top
 !    xland1           - land mask (1 for land, 2 for water)
@@ -125,7 +126,7 @@ contains
    
    real(kind=kind_phys), dimension(its:ite)          , intent(in   ) :: sina, cosa
    real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(in   ) :: uproj, vproj
-   real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(in   ) :: t1, q1, prslk, zl
+   real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(in   ) :: t1, q1, prslk, zl, dz
    real(kind=kind_phys), dimension(its:ite)          , intent(in   ) :: hpbl, xland1, br1
    integer, dimension(its:ite)                       , intent(in   ) :: kpbl
 !
@@ -235,6 +236,8 @@ contains
    real(kind=kind_phys), parameter                    :: coeff_fd = 6.325e-3_kind_phys   ! TOFD coefficient group
    real(kind=kind_phys)                               :: alpha_fd   ! alpha coefficient from Beljaars et al. (2004)
    integer                                            :: kpbl2,kvar
+   real(kind=kind_phys), dimension(its:ite,kts:kte)   :: za    ! height AGL of layer centers (m)
+   real(kind=kind_phys)                               :: zs    ! height MSL of surface (m)
 !
 ! variables for flow-blocking drag
 !
@@ -363,7 +366,15 @@ endif
 
      enddo
    enddo
-
+!
+!  Calculate AGL heights of layer centers
+!
+   do i = its,ite
+      zs = zl(i,1) - 0.5*dz(i,1)   ! surface height (m MSL)
+      do k = kts,kte
+         za(i,k) = zl(i,k) - zs
+      enddo
+   enddo
 !
    do i = its,ite
      zlowtop(i) = 2. * var(i)
@@ -612,13 +623,13 @@ if ( gsl_gwd_ss .eq. 1 ) then
          !kvar = MIN(kpbl, k-level of var)
          kvar = 1
          do k=kts+1,MAX(kpbl(i),kts+1)
-!            if (zl(i,k)>2.*var(i) .or. zl(i,k)>2*varmax) then
-            if (zl(i,k)>300.) then
+!            if (za(i,k)>2.*var(i) .or. za(i,k)>2*varmax) then
+            if (za(i,k)>300.) then
                kpbl2 = k
                if (k == kpbl(i)) then
                   hpbl2 = hpbl(i)+10.
                else
-                  hpbl2 = zl(i,k)+10.
+                  hpbl2 = za(i,k)+10.
                endif
                exit
             endif
@@ -675,14 +686,14 @@ if ( gsl_gwd_ss .eq. 1 ) then
 
               do k=kts,kpbl(i) !MIN(kpbl2+1,km-1)
 !original
-                !utendwave(i,k)=-1.*tauwavex0*2.*max((1.-zl(i,k)/hpbl(i)),0.)/hpbl(i)
-                !vtendwave(i,k)=-1.*tauwavey0*2.*max((1.-zl(i,k)/hpbl(i)),0.)/hpbl(i)
+                !utendwave(i,k)=-1.*tauwavex0*2.*max((1.-za(i,k)/hpbl(i)),0.)/hpbl(i)
+                !vtendwave(i,k)=-1.*tauwavey0*2.*max((1.-za(i,k)/hpbl(i)),0.)/hpbl(i)
 !new
-                utendwave(i,k)=-1.*tauwavex0*2.*max((1.-zl(i,k)/hpbl2),0.)/hpbl2
-                vtendwave(i,k)=-1.*tauwavey0*2.*max((1.-zl(i,k)/hpbl2),0.)/hpbl2
+                utendwave(i,k)=-1.*tauwavex0*2.*max((1.-za(i,k)/hpbl2),0.)/hpbl2
+                vtendwave(i,k)=-1.*tauwavey0*2.*max((1.-za(i,k)/hpbl2),0.)/hpbl2
 !mod-to be used in HRRRv3/RAPv4
-                !utendwave(i,k)=-1.*tauwavex0 * max((1.-zl(i,k)/hpbl2),0.)**2
-                !vtendwave(i,k)=-1.*tauwavey0 * max((1.-zl(i,k)/hpbl2),0.)**2
+                !utendwave(i,k)=-1.*tauwavex0 * max((1.-za(i,k)/hpbl2),0.)**2
+                !vtendwave(i,k)=-1.*tauwavey0 * max((1.-za(i,k)/hpbl2),0.)**2
               enddo
             endif
          endif
@@ -733,13 +744,13 @@ if ( gsl_gwd_fd .eq. 1 ) THEN
                ! Note:  In Beljaars et al. (2004):
                ! alpha_fd*beta*Cmd*Ccorr*2.109 = 12.*1.*0.005*0.6*2.109 = 0.0759
                ! lump beta*Cmd*Ccorr*2.109 into 1.*0.005*0.6*2.109 = coeff_fd ~ 6.325e-3_kind_phys
-               var_temp = alpha_fd*coeff_fd*EXP(-(zl(i,k)/H_efold)**1.5)*a2*       &
-                                 zl(i,k)**(-1.2)*ss_taper(i) ! this is greater than zero
+               var_temp = alpha_fd*coeff_fd*EXP(-(za(i,k)/H_efold)**1.5)*a2*       &
+                                 za(i,k)**(-1.2)*ss_taper(i) ! this is greater than zero
                !  Note:  This is a semi-implicit treatment of the time differencing
                !  per Beljaars et al. (2004, QJRMS)
                utendform(i,k) = - var_temp*wsp*u1(i,k)/(1. + var_temp*deltim*wsp)
                vtendform(i,k) = - var_temp*wsp*v1(i,k)/(1. + var_temp*deltim*wsp)
-               !if(zl(i,k) > 4000.) exit
+               if (za(i,k)/H_efold > 4.) exit
             enddo
          endif
 
