@@ -344,6 +344,8 @@ alpha_fd = 12._kind_phys
 if ( ugwp_diags ) then
    dusfc_ls = 0.0    ; dvsfc_ls = 0.0  ; dusfc_bl = 0.0  ; dvsfc_bl = 0.0
    dusfc_ss = 0.0    ; dvsfc_ss = 0.0  ; dusfc_fd = 0.0  ; dvsfc_fd = 0.0
+   dtaux3d_ls = 0.0  ; dtauy3d_ls = 0.0 ; dtaux3d_bl = 0.0 ; dtauy3d_bl = 0.0
+   dtaux3d_ss = 0.0  ; dtauy3d_ss = 0.0 ; dtaux3d_fd = 0.0 ; dtauy3d_fd = 0.0
 endif
 !
    do k = kts,kte
