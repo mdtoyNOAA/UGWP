@@ -62,10 +62,10 @@ contains
 !                    topographic form drag of Beljaars et al. (2004, QJRMS)
 !           Activation of each component is done by specifying the integer-parameters
 !           (defined below) to 0: inactive or 1: active
-!                    gsl_gwd_ls = 0 or 1: large-scale
-!                    gsl_gwd_bl = 0 or 1: blocking drag 
-!                    gsl_gwd_ss = 0 or 1: small-scale gravity wave drag
-!                    gsl_gwd_fd = 0 or 1: topographic form drag
+!                    ugwp_ms = 0 or 1: meso-scale
+!                    ugwp_bl = 0 or 1: blocking drag 
+!                    ugwp_ss = 0 or 1: small-scale gravity wave drag
+!                    ugwp_fd = 0 or 1: topographic form drag
 !
 !  references:
 !        hong et al. (2008), wea. and forecasting
@@ -131,7 +131,7 @@ contains
    integer, dimension(its:ite)                       , intent(in   ) :: kpbl
 !
    real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(in   ) :: prsl
-   real(kind=kind_phys), dimension(its:ite,kts:kme)  , intent(in   ) :: prsi
+   real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(in   ) :: prsi
 !
    real(kind=kind_phys), dimension(its:ite)          , intent(in   ) :: var, oc1, &
                                                                         oa2d1, oa2d2, oa2d3, oa2d4, &
@@ -147,9 +147,9 @@ contains
 ! Variables for scale-awareness:
 ! Small-scale GWD + turbulent form drag
    real(kind=kind_phys), parameter :: dxmin_ss = 1000., dxmax_ss = 12000.  ! min,max range of tapering (m)
-! Large-scale GWD
+! meso-scale GWD
    real(kind=kind_phys), parameter :: dxmin_ls = 3000., dxmax_ls = 13000.  ! min,max range of tapering (m)
-   real(kind=kind_phys), dimension(its:ite) :: ss_taper, ls_taper  ! large-scale tapering factors (-)
+   real(kind=kind_phys), dimension(its:ite) :: ss_taper, ls_taper  ! meso-scale tapering factors (-)
 !
 ! Variables for limiting topographic standard deviation (var)
    real(kind=kind_phys), parameter      :: varmax_ss = 50.,      &  ! varmax_ss not used
@@ -162,10 +162,10 @@ contains
 ! Each component is tapered off automatically as a function of dx, so best to 
 ! keep them activated (=1).
    integer, parameter ::         &
-      gsl_gwd_ls      = 1,       & ! large-scale gravity wave drag
-      gsl_gwd_bl      = 1,       & ! blocking drag 
-      gsl_gwd_ss      = 1,       & ! small-scale gravity wave drag (Steeneveld et al. 2008)
-      gsl_gwd_fd      = 1          ! form drag (Beljaars et al. 2004, QJRMS)
+      ugwp_ms      = 1,       & ! meso-scale gravity wave drag
+      ugwp_bl      = 1,       & ! blocking drag 
+      ugwp_ss      = 1,       & ! small-scale gravity wave drag (Steeneveld et al. 2008)
+      ugwp_fd      = 1          ! form drag (Beljaars et al. 2004, QJRMS)
 
 !
    real(kind=kind_phys), parameter      ::  ric     = 0.25    ! critical richardson number 
@@ -182,6 +182,9 @@ contains
    real(kind=kind_phys), parameter      ::  frc     = 1.0      
    real(kind=kind_phys), parameter      ::  ce      = 0.8     
    real(kind=kind_phys), parameter      ::  cg      = 0.5    
+   real(kind=kind_phys), parameter      ::  sgmalolev  = 0.5  ! max sigma lvl for dtfac
+   real(kind=kind_phys), parameter      ::  plolevmeso = 70.0 ! pres lvl for mesosphere OGWD reduction (Pa)
+   real(kind=kind_phys), parameter      ::  facmeso    = 0.5  ! fractional velocity reduction for OGWD
    integer,parameter                    ::  kpblmin = 2
 !
 ! local variables
@@ -194,7 +197,7 @@ contains
    real(kind=kind_phys)                 ::  fdir,cs,rcsks,                                     &
                                             wdir,ti,rdz,temp,tem2,dw2,shr2,bvf2,rdelks,        &
                                             wtkbj,tem,gfobnv,hd,fro,rim,temc,tem1,efact,       &
-                                            temv
+                                            temv,ksmax,dtfac_meso
 !
    real(kind=kind_phys), dimension(its:ite,kts:kte)   :: dudt, dvdt
    real(kind=kind_phys), dimension(its:ite,kts:kte)   :: dtaux2d_ls, dtauy2d_ls,  &
@@ -210,7 +213,7 @@ contains
                                                          oa, ol, oass, olss,                   &
                                                          dtfac, brvf, xlinv, delks,delks1,     &
                                                          zlowtop, govrth
-   real(kind=kind_phys)                               :: cleff
+   real(kind=kind_phys)                               :: cleff, blk_coeff
    real(kind=kind_phys), dimension(its:ite,kts:kte+1) :: taup
    real(kind=kind_phys), dimension(its:ite,kts:kte-1) :: velco
    real(kind=kind_phys), dimension(its:ite,kts:kte)   :: bnv2, usqj, taud_ls, taud_bl,   &
@@ -263,8 +266,6 @@ contains
 ! misc. coefficients
 !
    real(kind=kind_phys), parameter ::      &
-      clf_coeff = 3.4E+07, &  ! "effective length" coeff or large-scale GWD
-                              ! Note:  Can be used as "tuning knob"
       a1_coeff = 0.00026615161, &  ! Coefficient for TOFD from Beljaars et al. (2004)
       a2_coeff = 0.005363          !  ""
 !-------------------------------------------------------------------------------
@@ -480,7 +481,7 @@ endif
 !
 ! END INITIALIZATION; BEGIN GWD CALCULATIONS:
 !
-if ( (gsl_gwd_ls .eq. 1).or.(gsl_gwd_bl .eq. 1) ) then
+if ( (ugwp_ms .eq. 1).or.(ugwp_bl .eq. 1) ) then
 
    do i = its,ite
       if ( ls_taper(i) .gt. 1.e-02 ) then  !====
@@ -545,6 +546,14 @@ if ( (gsl_gwd_ls .eq. 1).or.(gsl_gwd_bl .eq. 1) ) then
          ldrag(i) = ldrag(i) .or. bnv2(i,1).le.0.0                         
          ldrag(i) = ldrag(i) .or. ulow(i).eq.1.0                           
          ldrag(i) = ldrag(i) .or. var(i) .le. 0.0                
+!  Check if mesoscale gravity waves will propagate vertically or be evanescent
+!  and not impart a drag force -- consider the maximum sub-grid horizontal
+!  topographic wavelength to be one-half the horizontal grid spacing -- calculate
+!  ksmax accordingly
+         ksmax = 4.0*pi_/dxmeter(i)   ! based on wavelength = 0.5*dx(i)
+         if ( bnv2(i,1).gt.0.0 ) then 
+            ldrag(i) = ldrag(i) .or. sqrt(bnv2(i,1))*rulow(i).lt.ksmax
+         endif
 !                                                                       
 ! set all ri low level values to the low level value          
 !                                                                       
@@ -569,16 +578,20 @@ if ( (gsl_gwd_ls .eq. 1).or.(gsl_gwd_bl .eq. 1) ) then
             efact    = (oa(i) + 2.) ** (ce*fr(i)/frc)                         
             efact    = min( max(efact,efmin), efmax )
             !!!!!!! cleff ("effective grid length") is highly tunable parameter
-            ! Based on tuning by NOAA on the GFS, the value of cleff should
-            ! be inversely proportional to the square root of the grid length
-            ! (dxmeter).  The larger (smaller) the grid size the smaller (larger)
-            ! the value of cleff.
-            cleff    = clf_coeff / sqrt(dxmeter(i))                            
+            ! Note:  Based on tuning of FV3GFS by NOAA/GSL, the "effective length"
+            ! is assumed constant and is tied to a "typical" horizontal wavenumber
+            ! of topography.  The relationship between this wavenumber and the
+            ! the grid spacing is unknown at this point.  A future GWD parameterization
+            ! will need to take the Fourier breakdown of subgrid topography into account.
+            ! For now, we are using a valuable that gives suitable results based on the
+            ! COORDE model intercomparison article by van Niekerk et al. (2020).
+            ! Also note that this is the inverse of the "cleff" in Kim and Doyle (2005).
+            cleff    = 8.84e-6_kind_phys 
             coefm(i) = (1. + ol(i)) ** (oa(i)+1.)                   
-            xlinv(i) = coefm(i) / cleff
+            xlinv(i) = coefm(i) * cleff
             tem      = fr(i) * fr(i) * oc1(i)
             gfobnv   = gmax * tem / ((tem + cg)*bnv(i))   
-               if ( gsl_gwd_ls .NE. 0 ) then
+               if ( ugwp_ms .NE. 0 ) then
                   taub(i)  = xlinv(i) * rhobar(i) * ulow(i) * ulow(i)          &
                              * ulow(i) * gfobnv * efact          
                else     ! We've gotten what we need for the blocking scheme
@@ -593,7 +606,7 @@ if ( (gsl_gwd_ls .eq. 1).or.(gsl_gwd_bl .eq. 1) ) then
       endif   ! if ( ls_taper(i) .gt. 1.e-02 )
    enddo   ! do i = its,ite
 
-endif   ! (gsl_gwd_ls .eq. 1).or.(gsl_gwd_bl .eq. 1)
+endif   ! (ugwp_ms .eq. 1).or.(ugwp_bl .eq. 1)
 
 !=========================================================
 ! add small-scale wavedrag for stable boundary layer
@@ -604,7 +617,7 @@ endif   ! (gsl_gwd_ls .eq. 1).or.(gsl_gwd_bl .eq. 1)
    utendwave=0.
    vtendwave=0.
 !
-if ( gsl_gwd_ss .eq. 1 ) then
+if ( ugwp_ss .eq. 1 ) then
    do i = its,ite
       if ( ss_taper(i) .gt. 1.e-02 ) then
 
@@ -719,9 +732,12 @@ if ( gsl_gwd_ss .eq. 1 ) then
 
       endif   ! if ( ss_taper(i) .gt. 1.e-02 ) then
    enddo   ! i = its,ite
-endif  ! ( gsl_gwd_ss .eq. 1 )
+endif  ! ( ugwp_ss .eq. 1 )
 
-if ( gsl_gwd_fd .eq. 1 ) THEN
+!===================================================================
+! Topographic Form Drag from Beljaars et al. (2004, QJRMS, equ. 16):
+!===================================================================
+if ( ugwp_fd .eq. 1 ) THEN
 
    do i=its,ite
 
@@ -777,7 +793,7 @@ if ( gsl_gwd_fd .eq. 1 ) THEN
 
    enddo  ! i=its,ite
 
-endif  ! if ( gsl_gwd_fd .eq. 1 )
+endif  ! if ( ugwp_fd .eq. 1 )
 
 
 if ( ugwp_diags ) then
@@ -791,8 +807,8 @@ endif
 
 
 !=======================================================
-! More for the large-scale gwd component
-if ( gsl_gwd_ls.eq.1 ) then
+! More for the meso-scale gwd component
+if ( ugwp_ms.eq.1 ) then
 
    do i=its,ite
    
@@ -859,13 +875,19 @@ if ( gsl_gwd_ls.eq.1 ) then
 
    enddo   ! do i=its,ite
 
-endif  ! if ( gsl_gwd_ls.eq.1 )
+endif  ! if ( ugwp_ms.eq.1 )
 
 
 !===============================================================
 !COMPUTE BLOCKING COMPONENT 
 !===============================================================
-if ( gsl_gwd_bl .eq. 1 ) then
+if ( ugwp_bl .eq. 1 ) then
+
+   ! NOAA/GSL has modified blocking by removing dependency on grid spacing
+   ! as in Lott and Miller (1997)
+   ! Based on tuning the FV3GFS a coefficient has been found to give a physically
+   ! reasonable value for blocking similar to that of Lott and Miller (1997)
+   blk_coeff = 1.92e-4_kind_phys
 
    do i = its,ite
 
@@ -896,7 +918,7 @@ if ( gsl_gwd_bl .eq. 1 ) then
 !--------- compute flow-blocking stress
 !
              cd = max(2.0-1.0/od(i),0.0)
-             taufb(i,kts) = 0.5 * rhobar(i) * coefm(i) / max(dxmax_ls,dxy(i))**2 * cd * dxyp(i) &
+             taufb(i,kts) = 0.5 * blk_coeff * rhobar(i) * coefm(i) * cd  &
                             * olp(i) * zblk * ulow(i)**2
              tautem = taufb(i,kts)/float(kblk-kts)
              do k = kts+1, kblk
@@ -914,45 +936,58 @@ if ( gsl_gwd_bl .eq. 1 ) then
 
    enddo   ! i = its,ite
 
-endif   ! if ( gsl_gwd_bl .eq. 1 ) -- end blocking drag
+endif   ! if ( ugwp_bl .eq. 1 ) -- end blocking drag
 
 !===========================================================
 do i = its,ite
 
-   if ( (gsl_gwd_ls .eq. 1 .or. gsl_gwd_bl .eq. 1) .and. (ls_taper(i) .gt. 1.E-02) ) then
+   if ( (ugwp_ms .eq. 1 .or. ugwp_bl .eq. 1) .and. (ls_taper(i) .gt. 1.E-02) ) then
       !                                                                       
       !  calculate - (g)*d(tau)/d(pressure) and deceleration terms dtaux, dtauy
       !
+      !  First, set taup (momentum flux) at model top equal to that of the layer
+      !  interface just below the top, i.e., taup(kte)
+      !  The idea is to allow the momentum flux to go out the 'top'.  This
+      !  ensures there is no GWD force at the top layer.
+      !
+      taup(i,kte+1) = taup(i,kte)
       do k = kts,kte                                                       
-       taud_ls(i,k) = 1. * (taup(i,k+1) - taup(i,k)) * g_ / del(i,k)
-       taud_bl(i,k) = 1. * (taufb(i,k+1) - taufb(i,k)) * g_ / del(i,k)
+         taud_ls(i,k) = 1. * (taup(i,k+1) - taup(i,k)) * g_ / del(i,k)
+         taud_bl(i,k) = 1. * (taufb(i,k+1) - taufb(i,k)) * g_ / del(i,k)
       enddo                                                             
-      !                                                                       
-      !  limit de-acceleration (momentum deposition ) at top to 1/2 value 
-      !  the idea is some stuff must go out the 'top'                     
-      !                                                                       
-      do klcap = lcap,kte                                               
-         taud_ls(i,klcap) = taud_ls(i,klcap) * factop
-         taud_bl(i,klcap) = taud_bl(i,klcap) * factop
-      enddo                                                          
-      !                                                                       
-      !  if the gravity wave drag would force a critical line             
-      !  in the lower ksmm1 layers during the next deltim timestep,     
-      !  then only apply drag until that critical line is reached.        
-      !                                                                       
+      !
+      !
+      !  if the gravity wave drag + blocking would force a critical line
+      !  in the layers below pressure-based 'sigma' level = sgmalolev during the next deltim
+      !  timestep, then only apply drag until that critical line is reached, i.e.,
+      !  reduce drag to limit resulting wind components to zero
+      !  Note: 'sigma' = prsi(k)/prsi(k=1), where prsi(k=1) is the surface pressure
+      !
       do k = kts,kpblmax-1
-         if (k .le. kbl(i)) then
-           if((taud_ls(i,k)+taud_bl(i,k)).ne.0.)                         &
-              dtfac(i) = min(dtfac(i),abs(velco(i,k)                     &
-                   /(deltim*(taud_ls(i,k)+taud_bl(i,k)))))
+         if (prsi(i,k).ge.sgmalolev*prsi(i,1)) then 
+            if ((taud_ls(i,k)+taud_bl(i,k)).ne.0.)                   &    
+               dtfac(i) = min(dtfac(i),abs(velco(i,k)                &    
+                    /(deltim*(taud_ls(i,k)+taud_bl(i,k)))))
+         else 
+            exit 
          endif
       enddo
-
+!
       do k = kts,kte                                                       
-         taud_ls(i,k)  = taud_ls(i,k) * dtfac(i) * ls_taper(i)
-         taud_bl(i,k)  = taud_bl(i,k) * dtfac(i) * ls_taper(i)
-         ! dtaux = taud(i,k) * xn(i)
-         ! dtauy = taud(i,k) * yn(i)
+         ! Check if well into mesosphere -- if so, perform similar reduction of
+         ! velocity tendency due to mesoscale GWD to prevent sudden reversal of
+         ! wind direction (similar to above)
+         dtfac_meso = 1.0
+         if (prsl(i,k).le.plolevmeso) then
+            if (taud_ls(i,k).ne.0.)                                  &
+               dtfac_meso = min(dtfac_meso,facmeso*abs(velco(i,k)    &
+                  /(deltim*taud_ls(i,k))))
+         endif
+
+
+
+         taud_ls(i,k)  = taud_ls(i,k) * dtfac(i) * dtfac_meso * ls_taper(i)
+         taud_bl(i,k)  = taud_bl(i,k) * dtfac(i) * dtfac_meso * ls_taper(i)
          dtaux2d_ls(i,k) = taud_ls(i,k) * xn(i)
          dtauy2d_ls(i,k) = taud_ls(i,k) * yn(i)
          dtaux2d_bl(i,k) = taud_bl(i,k) * xn(i)
@@ -978,7 +1013,7 @@ do i = its,ite
          enddo
       endif
 
-   endif ! ( (gsl_gwd_ls .eq. 1 .or. gsl_gwd_bl .eq. 1) .and. (ls_taper(i) .gt. 1.E-02) )
+   endif ! ( (ugwp_ms .eq. 1 .or. ugwp_bl .eq. 1) .and. (ls_taper(i) .gt. 1.E-02) )
 
 enddo    ! i = its,ite
 
