@@ -909,7 +909,7 @@ if ( ugwp_bl .eq. 1 ) then
                if(pe.ge.ke) then
                  kblk = k
                  kblk = min(kblk,kbl(i))
-                 zblk = zl(i,kblk)-zl(i,kts)
+                 zblk = za(i,kblk)
                endif
              endif
            enddo
