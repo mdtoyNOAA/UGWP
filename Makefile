@@ -1,14 +1,15 @@
 .SUFFIXES: .F .o
 
-all: dummy GSL_gwd_physics
+all: dummy UGWP_physics
 
 dummy:
-	echo "****** compiling GSL_gwd_physics ******"
+	echo "****** compiling UGWP_physics ******"
 
 OBJS = \
-	bl_ugwp.o
+	bl_ugwp.o       \
+	bl_ugwpv1_ngw.o
 
-GSL_gwd_physics: $(OBJS)
+UGWP_physics: $(OBJS)
 	ar -ru ./../libphys.a $(OBJS)
 
 clean:

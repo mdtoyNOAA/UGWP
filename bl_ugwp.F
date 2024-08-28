@@ -131,7 +131,7 @@ contains
    integer, dimension(its:ite)                       , intent(in   ) :: kpbl
 !
    real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(in   ) :: prsl
-   real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(in   ) :: prsi
+   real(kind=kind_phys), dimension(its:ite,kts:kme)  , intent(in   ) :: prsi
 !
    real(kind=kind_phys), dimension(its:ite)          , intent(in   ) :: var, oc1, &
                                                                         oa2d1, oa2d2, oa2d3, oa2d4, &

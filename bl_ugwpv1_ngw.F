@@ -17,22 +17,93 @@ module bl_ugwpv1_ngw
 !
 
 
-
+use mpas_log, only : mpas_log_write
+use ccpp_kinds, only: kind_phys
+use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update, calendar_ugwp
 
 
 
 contains
 
 
-   subroutine ugwpv1_ngw_init
+subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp) 
+
+   use ugwp_common
+   use mpas_atmphys_constants, only : a, P0
+   use mpas_constants, only : pii, gravity, omega, cp, rgas, rv
 
    implicit none
 
-   print *, "Ahoj svete:  Here we are in ugwpv1_ngw_init!"
+   integer, intent(in) :: me, master, julday   ! julday = day of year
+   integer, intent(in) :: julday   ! day of year
+   integer, intent(in) :: levs     ! number of model levels
+   real(kind=kind_phys) :: dtp     ! physics time step
+
+   integer :: ios
+   logical :: exists
+   real    :: dxsg
+   integer :: k
+
+   real(kind=kind_phys) :: p0_std
+
+   call mpas_log_write('Ahoj svete:  Here we are in ugwpv1_ngw_init!')
+
+   ! Temporary line
+   print *, "Ahoj svete: me =", me, "    master =", master
+
+   pi    = pii
+   arad  = a        ! Radius of earth (m)
+   p0_std = 101325._kind_phys  ! Standard atmospheric pressure (Pa) - Note P0 = ref pressure (10e5)
+   grav  = gravity
+   omega1= omega
+   cpd   = cp
+   rd    = rgas
+   rv    = rv
+   fv    = rv/rd-1._kind_phys
+
+   grav2  = grav + grav; rgrav  = 1._kind_phys/grav ; rgrav2 = rgrav*rgrav
+   rdi    = 1._kind_phys / rd ; rcpd = 1._kind_phys/cpd
+   rcpd2  = 0.5_kind_phys/cpd
+   gor    = grav/rd
+   gr2    = grav*gor
+   grcp   = grav*rcpd
+   gocp   = grcp
+   rcpdl  = cpd*rgrav
+   grav2cpd = grav*grcp
+
+   pi2      = 2._kind_phys*pi ;  pih = .5_kind_phys*pi
+   rad_to_deg=180.0_kind_phys/pi
+   deg_to_rad=pi/180.0_kind_phys
+
+   bnv2min = (pi2/1800._kind_phys)*(pi2/1800._kind_phys)
+   bnv2max = (pi2/30._kind_phys)*(pi2/30._kind_phys)
+   dw2min  = 1.0_kind_phys
+   velmin  = sqrt(dw2min)
+   minvel  = 0.5_kind_phys
+
+   omega2  = 2._kind_phys*omega1
+   omega3  = 3._kind_phys*omega1
+
+   hpscale = 7000._kind_phys ; hpskm = hpscale*1.e-3_kind_phys
+   rhp     = 1._kind_phys/hpscale
+   rhp2 = 0.5_kind_phys*rhp; rh4 = 0.25_kind_phys*rhp
+   rhp4 = rhp2 * rhp2
+   khp  = rhp* rd/cpd
+   mkzmin  = pi2/80.0e3_kind_phys
+   mkz2min = mkzmin*mkzmin
+   mkzmax  = pi2/500._kind_phys
+   mkz2max = mkzmax*mkzmax
+   cdmin   = 2.e-2_kind_phys/mkzmax
+
+   rcpdt  = rcpd/dtp
+
+   call cires_ugwpv1_init (me, master, julday, pi,      &
+                           arad, levs, p0_std, dtp)
 
 
 
-   end subroutine ugwpv1_ngw_init
+
+end subroutine ugwpv1_ngw_init
 
 
 
