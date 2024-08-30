@@ -18,6 +18,7 @@ module bl_ugwpv1_ngw
 
 
 use mpas_log, only : mpas_log_write
+use mpas_pool_routines
 use ccpp_kinds, only: kind_phys
 use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update, calendar_ugwp
 
@@ -45,6 +46,10 @@ subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp)
    integer :: k
 
    real(kind=kind_phys) :: p0_std
+
+   type(mpas_pool_type), pointer :: mesh
+   real(kind=kind_phys), dimension(:), pointer :: rdzw, dzu
+   real(kind=kind_phys), dimension(levs) :: zu  ! vert. coord. zeta at u-levels centers (m)
 
    call mpas_log_write('Ahoj svete:  Here we are in ugwpv1_ngw_init!')
 
@@ -97,8 +102,17 @@ subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp)
 
    rcpdt  = rcpd/dtp
 
-   call cires_ugwpv1_init (me, master, julday, pi,      &
-                           arad, levs, p0_std, dtp)
+   ! Create array of vertical coordinate zeta values at layer centers
+   call mpas_pool_get_array(mesh, 'rdzw', rdzw)  ! inverse delta-zeta at u-levels
+   call mpas_pool_get_array(mesh, 'dzu', dzu)    ! delta-zeta at w-levels
+
+   zu(1) = 0.5_kind_phys/rdzw(1)     
+   do k = 2,levs
+      zu(k) = zu(k-1) + dzu(k)
+   enddo
+
+
+   call cires_ugwpv1_init (me, master, julday, levs, zu, p0_std, dtp)
 
 
 

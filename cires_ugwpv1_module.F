@@ -141,13 +141,13 @@ module  cires_ugwpv1_module
 !
 !----------------------------------------------------------------------------------
 
-  subroutine cires_ugwpv1_init (me, master, ddd_ugwp, con_pi,                   &
-              con_rerth, levs, pref, dtp)
+  subroutine cires_ugwpv1_init (me, master, ddd_ugwp, levs, zu, pref, dtp)
 !
 !  input_nml_file ='input.nml'=fn_nml   ..... OLD_namelist and cdmvgwd(4) Corrected Bug Oct 4
 !
     use  netcdf
-    use  ugwp_oro_init,     only :  init_oro_gws
+    use  mpas_log,          only : mpas_log_write
+    ! use  ugwp_oro_init,     only :  init_oro_gws   ! Ahoj svete:  We may not need
     use  ugwp_conv_init,    only :  init_conv_gws
     use  ugwp_fjet_init,    only :  init_fjet_gws
     use  ugwp_okw_init,     only :  init_okw_gws
@@ -162,24 +162,11 @@ module  cires_ugwpv1_module
     integer, intent (in) :: me
     integer, intent (in) :: master
     integer, intent (in) :: ddd_ugwp
-    integer, intent (in) :: lonr
     integer, intent (in) :: levs
-    integer, intent (in) :: latr
+    real(kind=kind_phys), dimension(:), intent (in) :: zu
     real(kind=kind_phys),    intent (in) :: pref
     real(kind=kind_phys),    intent (in) :: dtp
-!
-! consider to retire them
-!
-    real(kind=kind_phys),    intent (in) :: con_pi, con_rerth
  
-    character(len=64), intent (in) :: fn_nml2
-    character(len=*),  intent (in) :: input_nml_file(:)
-
-!    character,  intent (in) :: input_nml_file
-!   
-    integer :: ios
-    logical :: exists
-    
     integer :: ncid,  iernc, vid, dimid, status
     integer :: k
 !    integer :: version
@@ -204,21 +191,22 @@ module  cires_ugwpv1_module
     allocate( zkm(levs),   pmb(levs) )
     
 !
-! ak -pa  bk-dimensionless  from surf => tol_lid_pressure =0
+! Calculate vertical 1D profile of pressure (Pa) and height (km)
+! Note:  An approximation based on vertical coordinate zeta and hypsometric relation
 !
     
     do k=1, levs
-       pmb(k) = ak(k) + pref*bk(k)    ! Pa -unit  Pref = 1.e5, pmb = Pa
-       zkm(k) = -hpskm*alog(pmb(k)/pref)
+       zkm(k) = 0.001_kind_phys * zu(k)   ! Convert to km
+       pmb(k) = pref*exp(-zu(k)/pref)     ! Pa
     enddo   
    
 !
 ! find ilaunch
 !
    if (knob_ugwp_palaunch > 900.e2) then
-     write(errmsg,'(a,e16.7)') 'cires_ugwpv1_init: unrealistic value of knob_ugwp_palaunch', knob_ugwp_palaunch
-     errflg = 1
-     return
+     call mpas_log_write('cires_ugwpv1_init: unrealistic value of knob_ugwp_palaunch $r',  &
+                          realArgs=(/knob_ugwp_palaunch/), messageType=MPAS_LOG_ERR)
+     call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
    endif
 
    do k=levs, 1, -1
@@ -227,7 +215,7 @@ module  cires_ugwpv1_module
 
       launch_level = max(k-1, 5)    ! above 5-layers from the surface
    if (me == master) then
-      print *, 'cires_ugwpv1 klev_ngw =', launch_level, nint(pmb(launch_level))
+      call mpas_log_write('cires_ugwpv1 klev_ngw = $i', intArgs=(/nint(pmb(launch_level))/))
    endif   
 !
 ! Part-1 :init_global_gwdis               again "damn"-con_p
@@ -241,8 +229,9 @@ module  cires_ugwpv1_module
 !    
 ! call init-solver for "stationary" multi-wave spectra and sub-grid oro
 !
-    call init_oro_gws( knob_ugwp_wvspec(1), knob_ugwp_azdir(1), &
-         knob_ugwp_stoch(1), knob_ugwp_effac(1), lonr, kxw       )
+! Ahoj svete:  Comment out these lines for now
+!    call init_oro_gws( knob_ugwp_wvspec(1), knob_ugwp_azdir(1), &
+!         knob_ugwp_stoch(1), knob_ugwp_effac(1), kxw       )
 !
 ! call init-sources for "non-sationary" multi-wave spectra
 !
@@ -255,7 +244,7 @@ module  cires_ugwpv1_module
 ! okw
         call init_okw_gws(knob_ugwp_wvspec(4), knob_ugwp_azdir(4), &
                           knob_ugwp_stoch(4), knob_ugwp_effac(4),  &
-                          lonr, kxw )
+                          kxw )
 !        if (me == master) print *, ' init_okw_gws '
       endif
 
@@ -263,15 +252,15 @@ module  cires_ugwpv1_module
 ! fronts
         call init_fjet_gws(knob_ugwp_wvspec(3), knob_ugwp_azdir(3), &
                            knob_ugwp_stoch(3), knob_ugwp_effac(3),  &
-                           lonr, kxw )
+                           kxw )
 !        if (me == master) print *, ' init_fjet_gws '
       endif
 
       if (knob_ugwp_wvspec(2) > 0) then
-! conv :   con_pi, con_rerth,
+! conv
         call init_conv_gws(knob_ugwp_wvspec(2), knob_ugwp_azdir(2), &
                            knob_ugwp_stoch(2), knob_ugwp_effac(2),  &
-                           lonr, kxw              )
+                           kxw              )
 !        if (me == master)   &
 !           print *, ' init_convective GWs ', knob_ugwp_wvspec(2), knob_ugwp_azdir(2)
 

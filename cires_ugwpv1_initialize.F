@@ -289,38 +289,6 @@
 
       contains
 !
-      subroutine init_oro_gws(nwaves, nazdir, nstoch, effac, &
-                              lonr, kxw )
-!
-!
-      integer :: nwaves, nazdir, nstoch
-      integer :: lonr			       
-      real(kind=kind_phys)    :: cdmbX
-      real(kind=kind_phys)    :: kxw
-      real(kind=kind_phys)    :: effac        ! it is analog of cdmbgwd(2) for GWs, off for now
-!-----------------------------! GFS-setup for cdmb & cleff
-! cdmb =  4.0 * (192.0/IMX)  
-! cleff = 0.5E-5 / SQRT(IMX/192.0)  = 0.5E-5*SQRT(192./IMX)
-!
-      real(kind=kind_phys), parameter :: lonr_refmb =  4.0 * 192.0
-      real(kind=kind_phys), parameter :: lonr_refgw =  192.0
-      real(kind=kind_phys), parameter :: cleff_ref  = 0.5e-5           !       1256 km = 10 * 125 km ???
-      
-! copy  to "ugwp_oro_init"  =>  nwaves, nazdir, nstoch
- 
-      nworo  =  nwaves
-      nazoro =  nazdir
-      nstoro =  nstoch
-
-      cdmbX = lonr_refmb/float(lonr)
-      
-      cdmb  = cdmbX
-      cleff = cleff_ref * sqrt(lonr_refgw/float(lonr))   !* effac
-!
-      end subroutine init_oro_gws
-!
-
-    end module ugwp_oro_init
 ! =========================================================================
 !
 !    ugwp_conv_init
@@ -336,7 +304,6 @@
       integer ::  nwcon                     ! number of waves
       integer ::  nazcon                    ! number of azimuths
       integer ::  nstcon                    ! flag for stochastic choice of launch level above Conv-cloud
-      real(kind=kind_phys)    ::  con_dlength
       real(kind=kind_phys)    ::  con_cldf
 
       real(kind=kind_phys), parameter    :: cmin  =  5  !2.5
@@ -351,7 +318,7 @@
       real(kind=kind_phys), allocatable  :: xaz_conv(:), yaz_conv(:)
      contains
 !
-     subroutine init_conv_gws(nwaves, nazdir, nstoch, effac, lonr, kxw)
+     subroutine init_conv_gws(nwaves, nazdir, nstoch, effac, kxw)
 !
      use ugwp_common,  only : pi2, arad
 
@@ -359,7 +326,6 @@
      
  
       integer :: nwaves, nazdir, nstoch
-      integer :: lonr
 !      
 ! ccpp
 !      
@@ -374,7 +340,6 @@
       nstcon   = nstoch
       eff_con  = effac
 
-      con_dlength = pi2*arad/float(lonr)      
 !
 ! allocate & define spectra in "selected direction": "dc" "ch(nwaves)"
 !
@@ -431,14 +396,13 @@
       real(kind=kind_phys), allocatable  :: xaz_fjet(:), yaz_fjet(:)
      contains
      
-     subroutine init_fjet_gws(nwaves, nazdir, nstoch, effac,lonr, kxw) 
+     subroutine init_fjet_gws(nwaves, nazdir, nstoch, effac, kxw) 
 
      use ugwp_common,  only : pi2, arad			      
 			      
      implicit none
 
       integer :: nwaves, nazdir, nstoch
-      integer :: lonr
       real(kind=kind_phys)    :: kxw,  effac , chk
  
       integer :: k
@@ -491,13 +455,12 @@
 !
 
 			     
-     subroutine init_okw_gws(nwaves, nazdir, nstoch, effac, lonr, kxw)
+     subroutine init_okw_gws(nwaves, nazdir, nstoch, effac, kxw)
      use ugwp_common,  only : pi2, arad
 
      implicit none
 
       integer :: nwaves, nazdir, nstoch
-      integer :: lonr
       real(kind=kind_phys)    :: kxw,  effac , chk
  
       integer :: k
