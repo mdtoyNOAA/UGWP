@@ -7,7 +7,16 @@ dummy:
 
 OBJS = \
 	bl_ugwp.o       \
-	bl_ugwpv1_ngw.o
+	bl_ugwpv1_ngw.o \
+	cires_ugwpv1_initialize.o \
+	cires_ugwpv1_module.o
+
+# DEPENDENCIES:
+bl_ugwpv1_ngw.o: \
+	cires_ugwpv1_module.o
+
+cires_ugwpv1_module.o: \
+	cires_ugwpv1_initialize.o
 
 UGWP_physics: $(OBJS)
 	ar -ru ./../libphys.a $(OBJS)

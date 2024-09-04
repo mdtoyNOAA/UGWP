@@ -20,7 +20,7 @@ module bl_ugwpv1_ngw
 use mpas_log, only : mpas_log_write
 use mpas_pool_routines
 use ccpp_kinds, only: kind_phys
-use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update, calendar_ugwp
+use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update
 
 
 
@@ -30,12 +30,12 @@ contains
 subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp) 
 
    use ugwp_common
-   use mpas_atmphys_constants, only : a, P0
-   use mpas_constants, only : pii, gravity, omega, cp, rgas, rv
+   use mpas_atmphys_constants, only : P0
+   use mpas_constants, only : pii, gravity, omega, a, cp, rgas, rv_moist=>rv
 
    implicit none
 
-   integer, intent(in) :: me, master, julday   ! julday = day of year
+   integer, intent(in) :: me, master
    integer, intent(in) :: julday   ! day of year
    integer, intent(in) :: levs     ! number of model levels
    real(kind=kind_phys) :: dtp     ! physics time step
@@ -63,7 +63,9 @@ subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp)
    omega1= omega
    cpd   = cp
    rd    = rgas
-   rv    = rv
+   rv    = rv_moist
+   ! Temporary line
+   print *, "Ahoj svete:  rv =", rv
    fv    = rv/rd-1._kind_phys
 
    grav2  = grav + grav; rgrav  = 1._kind_phys/grav ; rgrav2 = rgrav*rgrav

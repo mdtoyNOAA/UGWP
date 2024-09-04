@@ -145,8 +145,8 @@ module  cires_ugwpv1_module
 !
 !  input_nml_file ='input.nml'=fn_nml   ..... OLD_namelist and cdmvgwd(4) Corrected Bug Oct 4
 !
-    use  netcdf
     use  mpas_log,          only : mpas_log_write
+    use mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
     ! use  ugwp_oro_init,     only :  init_oro_gws   ! Ahoj svete:  We may not need
     use  ugwp_conv_init,    only :  init_conv_gws
     use  ugwp_fjet_init,    only :  init_fjet_gws
@@ -198,6 +198,11 @@ module  cires_ugwpv1_module
     do k=1, levs
        zkm(k) = 0.001_kind_phys * zu(k)   ! Convert to km
        pmb(k) = pref*exp(-zu(k)/pref)     ! Pa
+       ! Temporary lines
+       if (me.eq.master) then
+          write (40,*) "k =", k, "   zkm =", zkm(k)
+          write (41,*) "k =", k, "   pmb =", pmb(k)
+       endif
     enddo   
    
 !
