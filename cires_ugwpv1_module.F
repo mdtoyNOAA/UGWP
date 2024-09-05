@@ -52,25 +52,25 @@ module  cires_ugwpv1_module
 
     ! The following are the former 'cires_ugwp_nml' namelist options
     integer               :: knob_ugwp_version = 1    
-    integer               :: knob_ugwp_solver=1              ! 1, 2, 3, 4 - (linsat, ifs_2010, ad_gfdl, dsp_dis)
-    integer, dimension(4) :: knob_ugwp_source=(/1,0,1,0/)    ! [1,0,1,1]  - (oro, fronts, conv, imbf-owp]
-    integer, dimension(4) :: knob_ugwp_wvspec=(/1,32,32,32/) !  number of waves for- (oro, fronts, conv, imbf-owp]
+    integer               :: knob_ugwp_solver=2              ! 1, 2, 3, 4 - (linsat, ifs_2010, ad_gfdl, dsp_dis)
+    integer, dimension(4) :: knob_ugwp_source=(/1,1,0,0/)    ! [1,0,1,1]  - (oro, fronts, conv, imbf-owp]
+    integer, dimension(4) :: knob_ugwp_wvspec=(/1,25,25,25/) !  number of waves for- (oro, fronts, conv, imbf-owp]
     integer, dimension(4) :: knob_ugwp_azdir=(/2,4,4,4/)     ! number of wave azimuths for-(oro, fronts, conv, imbf-owp]
     integer, dimension(4) :: knob_ugwp_stoch=(/0,0,0,0/)     !  0 - deterministic ; 1 - stochastic
     real(kind=kind_phys),    dimension(4) :: knob_ugwp_effac=(/1.,1.,1.,1./) !  efficiency factors for- (oro, fronts, conv, imbf-owp]
 
     integer               :: knob_ugwp_doaxyz=1            ! 1 -gwdrag
     integer               :: knob_ugwp_doheat=1            ! 1 -gwheat
-    integer               :: knob_ugwp_dokdis=0            ! 1 -gwmixing
-    integer               :: knob_ugwp_ndx4lh = 2          ! n-number  of  "unresolved" "n*dx" for lh_gw
+    integer               :: knob_ugwp_dokdis=2            ! 1 -gwmixing
+    integer               :: knob_ugwp_ndx4lh = 4          ! n-number  of  "unresolved" "n*dx" for lh_gw
     integer               :: knob_ugwp_nslope = 1          ! spectral"growth" S-slope of GW-energy spectra mkz^S    
  
-    real(kind=kind_phys)                  :: knob_ugwp_palaunch = 500.e2   ! fixed pressure layer in Pa for "launch" of NGWs
-    real(kind=kind_phys)                  :: knob_ugwp_lzmax = 12.5e3      ! 12.5 km max-VERT-WL of GW-spectra
+    real(kind=kind_phys)                  :: knob_ugwp_palaunch = 275.e2   ! fixed pressure layer in Pa for "launch" of NGWs
+    real(kind=kind_phys)                  :: knob_ugwp_lzmax = 15.750e3    ! 12.5 km max-VERT-WL of GW-spectra
     real(kind=kind_phys)                  :: knob_ugwp_lzstar = 2.0e3      ! UTLS  mstar = 6.28/lzstar  2-2.5 km 
-    real(kind=kind_phys)                  :: knob_ugwp_lzmin = 1.5e3       ! 1.5 km  min-VERT-WL of GW-spectra       
+    real(kind=kind_phys)                  :: knob_ugwp_lzmin = 0.75e3      ! 1.5 km  min-VERT-WL of GW-spectra       
     real(kind=kind_phys)                  :: knob_ugwp_taumin = 0.25e-3
-    real(kind=kind_phys)                  :: knob_ugwp_tauamp = 7.75e-3    ! range from 30.e-3 to 3.e-3 ( space-borne values)
+    real(kind=kind_phys)                  :: knob_ugwp_tauamp = 6.0e-3     ! range from 30.e-3 to 3.e-3 ( space-borne values)
     real(kind=kind_phys)                  :: knob_ugwp_lhmet  = 200.e3     ! 200 km
     
     logical               :: knob_ugwp_tlimb  = .true.    
@@ -141,13 +141,12 @@ module  cires_ugwpv1_module
 !
 !----------------------------------------------------------------------------------
 
-  subroutine cires_ugwpv1_init (me, master, ddd_ugwp, levs, zu, pref, dtp)
+  subroutine cires_ugwpv1_init (ddd_ugwp, levs, zu, pref, dtp)
 !
 !  input_nml_file ='input.nml'=fn_nml   ..... OLD_namelist and cdmvgwd(4) Corrected Bug Oct 4
 !
     use  mpas_log,          only : mpas_log_write
     use mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
-    ! use  ugwp_oro_init,     only :  init_oro_gws   ! Ahoj svete:  We may not need
     use  ugwp_conv_init,    only :  init_conv_gws
     use  ugwp_fjet_init,    only :  init_fjet_gws
     use  ugwp_okw_init,     only :  init_okw_gws
@@ -159,8 +158,6 @@ module  cires_ugwpv1_module
    
     implicit none
 
-    integer, intent (in) :: me
-    integer, intent (in) :: master
     integer, intent (in) :: ddd_ugwp
     integer, intent (in) :: levs
     real(kind=kind_phys), dimension(:), intent (in) :: zu
@@ -188,7 +185,7 @@ module  cires_ugwpv1_module
 !
     allocate( kvg(levs+1),   ktg(levs+1)  )
     allocate( krad(levs+1),  kion(levs+1) )
-    allocate( zkm(levs),   pmb(levs) )
+    allocate( zkm(levs),     pmb(levs)    )
     
 !
 ! Calculate vertical 1D profile of pressure (Pa) and height (km)
@@ -197,12 +194,7 @@ module  cires_ugwpv1_module
     
     do k=1, levs
        zkm(k) = 0.001_kind_phys * zu(k)   ! Convert to km
-       pmb(k) = pref*exp(-zu(k)/pref)     ! Pa
-       ! Temporary lines
-       if (me.eq.master) then
-          write (40,*) "k =", k, "   zkm =", zkm(k)
-          write (41,*) "k =", k, "   pmb =", pmb(k)
-       endif
+       pmb(k) = pref*exp(-zu(k)/hpscale)    ! Pa
     enddo   
    
 !
@@ -218,14 +210,12 @@ module  cires_ugwpv1_module
      if (pmb(k) .gt. knob_ugwp_palaunch ) exit
    enddo
 
-      launch_level = max(k-1, 5)    ! above 5-layers from the surface
-   if (me == master) then
-      call mpas_log_write('cires_ugwpv1 klev_ngw = $i', intArgs=(/nint(pmb(launch_level))/))
-   endif   
+   launch_level = max(k-1, 5)    ! above 5-layers from the surface
+   call mpas_log_write('cires_ugwpv1 klev_ngw = $i', intArgs=(/nint(pmb(launch_level))/),masterOnly=.true.)
 !
 ! Part-1 :init_global_gwdis               again "damn"-con_p
 !
-    call init_global_gwdis(levs, zkm, pmb, kvg, ktg, krad, kion,  me,  master)
+    call init_global_gwdis(levs, zkm, pmb, kvg, ktg, krad, kion)
 			       
 !
 ! Part-2 :init_SOURCES_gws
@@ -244,13 +234,11 @@ module  cires_ugwpv1_module
 
     IF (do_physb_gwsrcs) THEN
 
-!      if (me == master) print *, ' do_physb_gwsrcs ',  do_physb_gwsrcs, ' in cires_ugwp_init_modv1 '
       if (knob_ugwp_wvspec(4) > 0) then
 ! okw
         call init_okw_gws(knob_ugwp_wvspec(4), knob_ugwp_azdir(4), &
                           knob_ugwp_stoch(4), knob_ugwp_effac(4),  &
                           kxw )
-!        if (me == master) print *, ' init_okw_gws '
       endif
 
       if (knob_ugwp_wvspec(3) > 0) then
@@ -258,7 +246,6 @@ module  cires_ugwpv1_module
         call init_fjet_gws(knob_ugwp_wvspec(3), knob_ugwp_azdir(3), &
                            knob_ugwp_stoch(3), knob_ugwp_effac(3),  &
                            kxw )
-!        if (me == master) print *, ' init_fjet_gws '
       endif
 
       if (knob_ugwp_wvspec(2) > 0) then
@@ -266,8 +253,6 @@ module  cires_ugwpv1_module
         call init_conv_gws(knob_ugwp_wvspec(2), knob_ugwp_azdir(2), &
                            knob_ugwp_stoch(2), knob_ugwp_effac(2),  &
                            kxw              )
-!        if (me == master)   &
-!           print *, ' init_convective GWs ', knob_ugwp_wvspec(2), knob_ugwp_azdir(2)
 
       endif
 
@@ -282,7 +267,7 @@ module  cires_ugwpv1_module
     if   (knob_ugwp_solver==1) then
 !
       kxw = pi2/lhmet
-      call initsolv_lsatdis(me, master, knob_ugwp_wvspec(2), knob_ugwp_azdir(2), &
+      call initsolv_lsatdis(knob_ugwp_wvspec(2), knob_ugwp_azdir(2), &
                             knob_ugwp_stoch(2), knob_ugwp_effac(2), do_physb_gwsrcs, kxw )
     endif
      if   (knob_ugwp_solver == 2) then 
@@ -300,7 +285,7 @@ module  cires_ugwpv1_module
 
        kxw = pi2/lhmet
        
-       call initsolv_wmsdis(me, master, knob_ugwp_wvspec(2), knob_ugwp_azdir(2),           &
+       call initsolv_wmsdis(knob_ugwp_wvspec(2), knob_ugwp_azdir(2),           &
            knob_ugwp_stoch(2), knob_ugwp_effac(2), do_physb_gwsrcs, kxw, knob_ugwp_version)
 	   
      endif
@@ -308,7 +293,8 @@ module  cires_ugwpv1_module
 
 !======================
     module_is_initialized = .true.
-    if (me == master) print *, ' CIRES_ugwpV1 is initialized ', module_is_initialized
+    call mpas_log_write(' CIRES_ugwpV1 is initialized $l ',     &
+                        logicArgs=(/module_is_initialized/), masterOnly=.true.)
 
     end subroutine cires_ugwpv1_init
 
@@ -373,14 +359,13 @@ module  cires_ugwpv1_module
 !
 !
         
-    subroutine ngwflux_update(me, master, im, levs, kdt, ddd, curdate, &
+    subroutine ngwflux_update(im, levs, kdt, ddd, curdate, &
 	   tau_ddd, xlatd, sinlat,coslat, rain, tau_ngw)
 	    
        use ccpp_kinds, only: kind_phys	           
        implicit none
 !input
        	 
-       integer, intent(in) :: me,  master                                         !, jdat(8) 
        integer, intent(in) :: im,   levs, kdt     
        integer, intent(in) :: ddd, curdate  
        

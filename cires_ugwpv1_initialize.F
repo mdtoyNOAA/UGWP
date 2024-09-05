@@ -100,13 +100,12 @@
 !Part-1 init =>   wave dissipation + RFriction
 !
 !===================================================
-     subroutine init_global_gwdis(levs, zkm, pmb, kvg, ktg, krad, kion, me, master)
+     subroutine init_global_gwdis(levs, zkm, pmb, kvg, ktg, krad, kion)
 !				      
      use ccpp_kinds,    only : kind_phys 
      use ugwp_common,   only : pih, pi  
      
      implicit none
-     integer , intent(in)                 :: me, master
      integer , intent(in)                 :: levs
      real(kind=kind_phys), intent(in)                     :: zkm(levs), pmb(levs)    ! in km-Pa
      real(kind=kind_phys), intent(out), dimension(levs+1) :: kvg, ktg, krad, kion
@@ -175,15 +174,6 @@
       kvg(k)  =  kvg(k-1)
       ktg(k)  =  ktg(k-1)
       
-!      if (me == master) then
-!	  write(6, * ) '  zkm(k), kvg(k), kvg(k)*(6.28/5000.)**2,  kion(k) ... init_global_gwdis'     
-!        do k=1, levs, 1
-!	  write(6,132) zkm(k), kvg(k), kvg(k)*(6.28/5000.)**2,  kion(k), pmb(k) 
-!	enddo      
-!      endif
-!
-! 132  format( 2x, F8.3,' dis-scales:', 4(2x, E10.3))    
-                                                          
      end subroutine init_global_gwdis
 !
 ! ========================================================================
@@ -409,11 +399,10 @@
 !
      contains
 
-     subroutine initsolv_lsatdis(me, master,  nwaves, nazdir, nstoch, effac, do_physb, kxw)
+     subroutine initsolv_lsatdis(nwaves, nazdir, nstoch, effac, do_physb, kxw)
 
      implicit none
 !
-     integer  :: me, master
      integer  :: nwaves, nazdir
      integer  :: nstoch
      real(kind=kind_phys)     :: effac
@@ -516,9 +505,9 @@
 !
       contains
 !============================================================================
-     subroutine initsolv_wmsdis(me, master,  nwaves, nazdir, nstoch, effac, do_physb, kxw, version)
+     subroutine initsolv_wmsdis(nwaves, nazdir, nstoch, effac, do_physb, kxw, version)
  
-!        call initsolv_wmsdis(me, master, knob_ugwp_wvspec(2), knob_ugwp_azdir(2), &
+!        call initsolv_wmsdis(knob_ugwp_wvspec(2), knob_ugwp_azdir(2), &
 !         knob_ugwp_stoch(2), knob_ugwp_effac(2), do_physb_gwsrcs, kxw,version)
 !
      implicit none
@@ -527,7 +516,7 @@
 !      nwaves, nazdir, nstoch, effac, do_physb, kxw
 !
 !
-     integer, intent(in)  :: me, master, nwaves, nazdir, nstoch
+     integer, intent(in)  :: nwaves, nazdir, nstoch
      integer, intent(in)  :: version 
         
      real(kind=kind_phys), intent(in)     :: effac, kxw
@@ -571,14 +560,6 @@
       allocate ( zci(nwav),  zci4(nwav), zci3(nwav),zci2(nwav), zdci(nwav)  )
       allocate ( zcosang(nazd), zsinang(nazd) )
       allocate (lzmet(nwav), czmet(nwav), mkzmet(nwav), dczmet(nwav), dmkz(nwav) )   
-
-!      if (me == master) then
-!         print *, 'ugwp_v1/v0: init_gw_wmsdis_control '
-!  
-!         print *, 'ugwp_v1/v0: WMS_DIS launch layer ',    ilaunch
-!         print *, 'ugwp_v1/v0: WMS_DIS tot_mflux in mpa', tamp_mpa*1000.
-!         print *, 'ugwp_v1/v0: WMS_DIS lhmet in km  ' ,   lhmet*1.e-3      	 
-!       endif
 
        zpexp = gptwo * 0.5                    ! gptwo=2 , zpexp = 1.
 
@@ -661,35 +642,36 @@
 	 
 	RETURN	  	 
 !===================  Diag prints after return  ====================
-         if (me == master) then
-           print *
-           print *,  'ugwp_v0: zcimin=' , zcimin
-           print *,  'ugwp_v0: zcimax=' , zcimax
-           print *,  'ugwp_v0: zgam=   ', zgam                
-           print *
+         ! Ahoj svete
+         ! if (me == master) then
+         !   print *
+         !   print *,  'ugwp_v0: zcimin=' , zcimin
+         !   print *,  'ugwp_v0: zcimax=' , zcimax
+         !   print *,  'ugwp_v0: zgam=   ', zgam                
+         !   print *
            
 !          print *, ' ugwp_v1  nslope=', nslope
-           print *
-           print *,  'ugwp_v1: zcimin/zci=' , maxval(zci)
-           print *,  'ugwp_v1: zcimax/zci=' , minval(zci)
-           print *,  'ugwp_v1: cd_crit=', ucrit            
-           print *,  'ugwp_v1: launch_level',  ilaunch
-           print *, ' ugwp_v1  lzstar=', lzstar
-           print *, ' ugwp_v1  nslope=', nslope
+         !   print *
+         !   print *,  'ugwp_v1: zcimin/zci=' , maxval(zci)
+         !   print *,  'ugwp_v1: zcimax/zci=' , minval(zci)
+         !   print *,  'ugwp_v1: cd_crit=', ucrit            
+         !   print *,  'ugwp_v1: launch_level',  ilaunch
+         !   print *, ' ugwp_v1  lzstar=', lzstar
+         !   print *, ' ugwp_v1  nslope=', nslope
 
-           print *
-	   nslope3=nslope+3.0
-         do inc=1, nwav	    	  
-           zcin =zci(inc)*rcstar
-	   fpc =  rcstar*(zcin*zcin)/(1.+ zcin**nslope3)	   	    
-           fpc_dc = fpc * zdci(inc)
-	   write(6,111)  inc, zci(inc), zdci(inc),ucrit, fpc, fpc_dc, 6.28e-3/bnfix*zci(inc)
-          enddo
-         endif
+         !   print *
+	 !   nslope3=nslope+3.0
+         ! do inc=1, nwav	    	  
+         !   zcin =zci(inc)*rcstar
+	 !   fpc =  rcstar*(zcin*zcin)/(1.+ zcin**nslope3)	   	    
+         !   fpc_dc = fpc * zdci(inc)
+	 !   write(6,111)  inc, zci(inc), zdci(inc),ucrit, fpc, fpc_dc, 6.28e-3/bnfix*zci(inc)
+         !  enddo
+         ! endif
 	 
 
 	 
- 111     format( 'wms-zci', i4, 7 (3x, F8.3))
+!  111     format( 'wms-zci', i4, 7 (3x, F8.3))
 
      end subroutine initsolv_wmsdis
 !

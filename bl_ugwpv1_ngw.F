@@ -18,7 +18,6 @@ module bl_ugwpv1_ngw
 
 
 use mpas_log, only : mpas_log_write
-use mpas_pool_routines
 use ccpp_kinds, only: kind_phys
 use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update
 
@@ -27,7 +26,7 @@ use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update
 contains
 
 
-subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp) 
+subroutine ugwpv1_ngw_init (julday,levs,dtp,rdzw,dzu) 
 
    use ugwp_common
    use mpas_atmphys_constants, only : P0
@@ -35,10 +34,11 @@ subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp)
 
    implicit none
 
-   integer, intent(in) :: me, master
    integer, intent(in) :: julday   ! day of year
    integer, intent(in) :: levs     ! number of model levels
-   real(kind=kind_phys) :: dtp     ! physics time step
+   real(kind=kind_phys), intent(in) :: dtp     ! physics time step
+   real(kind=kind_phys), dimension(:), intent(in) :: rdzw ! inverse delta-zeta at u-levels
+   real(kind=kind_phys), dimension(:), intent(in) :: dzu  ! delta-zeta at w-levels
 
    integer :: ios
    logical :: exists
@@ -47,14 +47,9 @@ subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp)
 
    real(kind=kind_phys) :: p0_std
 
-   type(mpas_pool_type), pointer :: mesh
-   real(kind=kind_phys), dimension(:), pointer :: rdzw, dzu
    real(kind=kind_phys), dimension(levs) :: zu  ! vert. coord. zeta at u-levels centers (m)
 
-   call mpas_log_write('Ahoj svete:  Here we are in ugwpv1_ngw_init!')
-
-   ! Temporary line
-   print *, "Ahoj svete: me =", me, "    master =", master
+   call mpas_log_write('Ahoj svete:  Here we are in ugwpv1_ngw_init!',masterOnly=.true.)
 
    pi    = pii
    arad  = a        ! Radius of earth (m)
@@ -64,8 +59,6 @@ subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp)
    cpd   = cp
    rd    = rgas
    rv    = rv_moist
-   ! Temporary line
-   print *, "Ahoj svete:  rv =", rv
    fv    = rv/rd-1._kind_phys
 
    grav2  = grav + grav; rgrav  = 1._kind_phys/grav ; rgrav2 = rgrav*rgrav
@@ -105,16 +98,13 @@ subroutine ugwpv1_ngw_init (me,master,julday,levs,dtp)
    rcpdt  = rcpd/dtp
 
    ! Create array of vertical coordinate zeta values at layer centers
-   call mpas_pool_get_array(mesh, 'rdzw', rdzw)  ! inverse delta-zeta at u-levels
-   call mpas_pool_get_array(mesh, 'dzu', dzu)    ! delta-zeta at w-levels
-
    zu(1) = 0.5_kind_phys/rdzw(1)     
    do k = 2,levs
       zu(k) = zu(k-1) + dzu(k)
    enddo
 
 
-   call cires_ugwpv1_init (me, master, julday, levs, zu, p0_std, dtp)
+   call cires_ugwpv1_init (julday, levs, zu, p0_std, dtp)
 
 
 
