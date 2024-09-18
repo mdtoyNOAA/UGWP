@@ -100,7 +100,6 @@ contains
 !    dusfcg_*, dvsfcg_*     - gw surface stress
 !
 !-------------------------------------------------------------------------------
-   use ccpp_kind_types, only: kind_phys
    implicit none
 !
    integer, parameter                                                :: kts = 1
