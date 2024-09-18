@@ -1,5 +1,5 @@
 module bl_ugwp
-use ccpp_kinds,only: kind_phys 
+use ccpp_kind_types,only: kind_phys 
 !===============================================================================
    IMPLICIT NONE
    PRIVATE
@@ -100,7 +100,7 @@ contains
 !    dusfcg_*, dvsfcg_*     - gw surface stress
 !
 !-------------------------------------------------------------------------------
-   use ccpp_kinds, only: kind_phys
+   use ccpp_kind_types, only: kind_phys
    implicit none
 !
    integer, parameter                                                :: kts = 1
