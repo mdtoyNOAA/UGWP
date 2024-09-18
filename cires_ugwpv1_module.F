@@ -141,12 +141,12 @@ module  cires_ugwpv1_module
 !
 !----------------------------------------------------------------------------------
 
-  subroutine cires_ugwpv1_init (ddd_ugwp, levs, zu, pref, dtp)
+  subroutine cires_ugwpv1_init (levs, zu, pref, dtp)
 !
 !  input_nml_file ='input.nml'=fn_nml   ..... OLD_namelist and cdmvgwd(4) Corrected Bug Oct 4
 !
-    use  mpas_log,          only : mpas_log_write
-    use mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
+    use  mpas_log,           only : mpas_log_write
+    use  mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
     use  ugwp_conv_init,    only :  init_conv_gws
     use  ugwp_fjet_init,    only :  init_fjet_gws
     use  ugwp_okw_init,     only :  init_okw_gws
@@ -158,7 +158,6 @@ module  cires_ugwpv1_module
    
     implicit none
 
-    integer, intent (in) :: ddd_ugwp
     integer, intent (in) :: levs
     real(kind=kind_phys), dimension(:), intent (in) :: zu
     real(kind=kind_phys),    intent (in) :: pref
@@ -211,7 +210,7 @@ module  cires_ugwpv1_module
    enddo
 
    launch_level = max(k-1, 5)    ! above 5-layers from the surface
-   call mpas_log_write('cires_ugwpv1 klev_ngw = $i', intArgs=(/nint(pmb(launch_level))/),masterOnly=.true.)
+   call mpas_log_write('cires_ugwpv1 klev_ngw = $i Pa', intArgs=(/nint(pmb(launch_level))/),masterOnly=.true.)
 !
 ! Part-1 :init_global_gwdis               again "damn"-con_p
 !

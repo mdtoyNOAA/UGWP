@@ -26,15 +26,16 @@ use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update
 contains
 
 
-subroutine ugwpv1_ngw_init (julday,levs,dtp,rdzw,dzu) 
+subroutine ugwpv1_ngw_init (levs,dtp,rdzw,dzu) 
 
    use ugwp_common
    use mpas_atmphys_constants, only : P0
    use mpas_constants, only : pii, gravity, omega, a, cp, rgas, rv_moist=>rv
+   use cires_tauamf_data,   only:  cires_indx_ugwp,  read_tau_amf
+   use cires_tauamf_data,   only:  tau_limb, days_limb, ugwp_taulat
 
    implicit none
 
-   integer, intent(in) :: julday   ! day of year
    integer, intent(in) :: levs     ! number of model levels
    real(kind=kind_phys), intent(in) :: dtp     ! physics time step
    real(kind=kind_phys), dimension(:), intent(in) :: rdzw ! inverse delta-zeta at u-levels
@@ -104,8 +105,11 @@ subroutine ugwpv1_ngw_init (julday,levs,dtp,rdzw,dzu)
    enddo
 
 
-   call cires_ugwpv1_init (julday, levs, zu, p0_std, dtp)
+   call cires_ugwpv1_init (levs, zu, p0_std, dtp)
 
+
+   ! Read in tau_amf (momentum flux) for NGW
+   call read_tau_amf()
 
 
 
