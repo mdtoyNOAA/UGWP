@@ -111,6 +111,9 @@ subroutine ugwpv1_ngw_init (levs,dtp,rdzw,dzu)
    ! Read in tau_amf (momentum flux) for NGW
    call read_tau_amf()
 
+   ! Calculate spatial interpolation weights for NGW tau_amf
+   ! call cires_indx_ugwp
+
 
 
 end subroutine ugwpv1_ngw_init
