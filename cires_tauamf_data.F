@@ -47,7 +47,7 @@ contains
  
          if (.not.allocated(ugwp_taulat))  allocate (ugwp_taulat(ntau_d1y ))
          if (.not.allocated(days_limb))    allocate (days_limb(ntau_d2t))
-         if (.not.allocated(tau_limb))     allocate (tau_limb(ntau_d1y, ntau_d2t ))   	   
+         if (.not.allocated(tau_limb))     allocate (tau_limb(ntau_d1y, ntau_d2t )) 
               
          iernc = nf90_inq_varid( ncid, 'DAYS', vid )
          iernc = nf90_get_var( ncid, vid, days_limb)
@@ -60,23 +60,25 @@ contains
 
    end  subroutine read_tau_amf  
   
-    subroutine cires_indx_ugwp (npts, me, master, dlat,j1_tau,j2_tau, w1_j1tau, w2_j2tau)
+    subroutine cires_indx_ugwp (pi,lat_r,j1_tau,j2_tau,w1_j1tau,w2_j2tau)
      
     use ccpp_kinds, only: kind_phys
-    		 
+
     implicit none
     
-      integer, intent(in)                                      ::   npts, me, master
-      real(kind=kind_phys) ,   dimension(npts), intent(in)     ::   dlat 
+      real(kind=kind_phys) ,   intent(in)                   ::  pi
+      real(kind=kind_phys) ,   dimension(:), intent(in)     ::  lat_r    ! latitude in radians
            
-      integer, dimension(npts), intent(inout)                  ::  j1_tau,   j2_tau
-      real(kind=kind_phys) ,   dimension(npts), intent(inout)  ::  w1_j1tau, w2_j2tau
+      integer, dimension(:), intent(inout)                  ::  j1_tau,   j2_tau
+      real(kind=kind_phys) ,   dimension(:), intent(inout)  ::  w1_j1tau, w2_j2tau
       
 !locals
 
       integer :: i,j, j1, j2     
+      real(kind=kind_phys), dimension(size(lat_r)) :: dlat    ! latitude in degrees
 !     
-      do j=1,npts
+      dlat(:) = 180._kind_phys/pi    ! Calculate latitude in degrees
+      do j=1,size(lat_r)
         j2_tau(j) = ntau_d1y
         do i=1,ntau_d1y
           if (dlat(j) < ugwp_taulat(i)) then
@@ -84,18 +86,17 @@ contains
             exit
           endif
         enddo
-	
       
         j2_tau(j) = min(j2_tau(j),ntau_d1y)
-        j1_tau(j) = max(j2_tau(j)-1,1)	
-	
+        j1_tau(j) = max(j2_tau(j)-1,1)
+
         if (j1_tau(j) /= j2_tau(j) ) then
           w2_j2tau(j) = (dlat(j)  - ugwp_taulat(j1_tau(j))) &
-                 / (ugwp_taulat(j2_tau(j))-ugwp_taulat(j1_tau(j)))       	 
+                 / (ugwp_taulat(j2_tau(j))-ugwp_taulat(j1_tau(j)))
         else
           w2_j2tau(j) = 1.0
         endif
-          w1_j1tau(j) = 1.0 -	w2_j2tau(j)	
+          w1_j1tau(j) = 1.0 - w2_j2tau(j)
       enddo
       return
     end subroutine cires_indx_ugwp   

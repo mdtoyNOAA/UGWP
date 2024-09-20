@@ -26,7 +26,7 @@ use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update
 contains
 
 
-subroutine ugwpv1_ngw_init (levs,dtp,rdzw,dzu) 
+subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1tau,ddy_j2tau) 
 
    use ugwp_common
    use mpas_atmphys_constants, only : P0
@@ -36,15 +36,20 @@ subroutine ugwpv1_ngw_init (levs,dtp,rdzw,dzu)
 
    implicit none
 
+   real(kind=kind_phys), dimension(:), intent(in) :: lat_r  ! latitude in radians
    integer, intent(in) :: levs     ! number of model levels
    real(kind=kind_phys), intent(in) :: dtp     ! physics time step
    real(kind=kind_phys), dimension(:), intent(in) :: rdzw ! inverse delta-zeta at u-levels
    real(kind=kind_phys), dimension(:), intent(in) :: dzu  ! delta-zeta at w-levels
+   integer, dimension(:), intent(inout) :: jindx1_tau, jindx2_tau
+   real(kind=kind_phys), dimension(:), intent(inout) :: ddy_j1tau, ddy_j2tau
 
    integer :: ios
    logical :: exists
    real    :: dxsg
    integer :: k
+   ! Temporary line
+   integer :: i
 
    real(kind=kind_phys) :: p0_std
 
@@ -104,15 +109,20 @@ subroutine ugwpv1_ngw_init (levs,dtp,rdzw,dzu)
       zu(k) = zu(k-1) + dzu(k)
    enddo
 
-
    call cires_ugwpv1_init (levs, zu, p0_std, dtp)
-
 
    ! Read in tau_amf (momentum flux) for NGW
    call read_tau_amf()
 
    ! Calculate spatial interpolation weights for NGW tau_amf
-   ! call cires_indx_ugwp
+   call cires_indx_ugwp(pi,lat_r,jindx1_tau,jindx2_tau,ddy_j1tau,ddy_j2tau)
+
+   ! Temporary lines
+   do k = 1,size(lat_r)
+      call mpas_log_write('Ahoj svete:   $r $i $i $r $r',      &
+              realArgs=(/lat_r(k),ddy_j1tau(k),ddy_j2tau(k)/), &
+              intArgs=(/jindx1_tau(k),jindx2_tau(k)/))
+   enddo
 
 
 
