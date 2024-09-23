@@ -77,7 +77,7 @@ contains
       integer :: i,j, j1, j2     
       real(kind=kind_phys), dimension(size(lat_r)) :: dlat    ! latitude in degrees
 !     
-      dlat(:) = 180._kind_phys/pi    ! Calculate latitude in degrees
+      dlat(:) = (180._kind_phys/pi)*lat_r(:)    ! Calculate latitude in degrees
       do j=1,size(lat_r)
         j2_tau(j) = ntau_d1y
         do i=1,ntau_d1y

@@ -117,17 +117,24 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
    ! Calculate spatial interpolation weights for NGW tau_amf
    call cires_indx_ugwp(pi,lat_r,jindx1_tau,jindx2_tau,ddy_j1tau,ddy_j2tau)
 
-   ! Temporary lines
-   do k = 1,size(lat_r)
-      call mpas_log_write('Ahoj svete:   $r $i $i $r $r',      &
-              realArgs=(/lat_r(k),ddy_j1tau(k),ddy_j2tau(k)/), &
-              intArgs=(/jindx1_tau(k),jindx2_tau(k)/))
-   enddo
-
-
-
 end subroutine ugwpv1_ngw_init
 
+
+subroutine ugwpv1_ngw_run
+
+   use ugwp_common
+
+   implicit none
+
+
+
+   call mpas_log_write('Ahoj svete:  Here we are in ugwpv1_ngw_run!',masterOnly=.true.)
+
+   call  slat_geos5_2020(im, tamp_mpa, xlat_d, tau_ngw)
+
+   
+
+end subroutine ugwpv1_ngw_run
 
 
 
