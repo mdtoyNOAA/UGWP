@@ -120,17 +120,22 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
 end subroutine ugwpv1_ngw_init
 
 
-subroutine ugwpv1_ngw_run
+subroutine ugwpv1_ngw_run(xlat,its,ite)
 
    use ugwp_common
 
    implicit none
 
+   real(kind=kind_phys), intent(in) :: xlat(:)
+
+   integer, intent(in) :: its,ite
+
+
 
 
    call mpas_log_write('Ahoj svete:  Here we are in ugwpv1_ngw_run!',masterOnly=.true.)
 
-   call  slat_geos5_2020(im, tamp_mpa, xlat_d, tau_ngw)
+   ! call  slat_geos5_2020(im, tamp_mpa, xlat_d, tau_ngw)
 
    
 
