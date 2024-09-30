@@ -111,13 +111,13 @@ contains
    real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(inout) :: rublten, rvblten
   
    real(kind=kind_phys), dimension(its:ite,kts:kte)  , intent(  out) :: dtaux3d, dtauy3d 
-   real(kind=kind_phys), dimension(:,:)              , intent(  out) :: dtaux3d_ls, dtauy3d_ls, &
+   real(kind=kind_phys), dimension(:,:), intent(  out), optional     :: dtaux3d_ls, dtauy3d_ls, &
                                                                         dtaux3d_bl, dtauy3d_bl, &
                                                                         dtaux3d_ss, dtauy3d_ss, &
                                                                         dtaux3d_fd, dtauy3d_fd
   
    real(kind=kind_phys), dimension(its:ite)          , intent(  out) :: dusfcg, dvsfcg
-   real(kind=kind_phys), dimension(:)                , intent(  out) :: dusfc_ls, dvsfc_ls, &
+   real(kind=kind_phys), dimension(:), intent(  out), optional       :: dusfc_ls, dvsfc_ls, &
                                                                         dusfc_bl, dvsfc_bl, &
                                                                         dusfc_ss, dvsfc_ss, &
                                                                         dusfc_fd, dvsfc_fd
