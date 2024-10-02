@@ -467,7 +467,7 @@
       real(kind=kind_phys) ,     parameter  :: tind_kz = 3.    
       real(kind=kind_phys) ,     parameter  :: stind_kz = sind_kz + tind_kz  
 !
-! copies from kmob_ugwp namelist
+! copies from knob_ugwp namelist
 !      
       real(kind=kind_phys)                  :: nslope              ! the GW sprctral slope at small-m             
       real(kind=kind_phys)                  :: lzstar

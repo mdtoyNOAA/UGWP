@@ -1,6 +1,6 @@
 module cires_tauamf_data
 
-  use ccpp_kinds, only: kind_phys
+use ccpp_kinds, only: kind_phys
 !...........................................................................................
 ! tabulated GW-sources: GRACILE/Ern et al., 2018 and/or Resolved GWs from C384-Annual run
 !...........................................................................................
@@ -16,7 +16,7 @@ implicit none
 
 contains
   
-   subroutine read_tau_amf()
+    subroutine read_tau_amf()
   
     use  netcdf
     use  mpas_log,           only : mpas_log_write
@@ -58,7 +58,8 @@ contains
          iernc = nf90_close(ncid)
       endif    
 
-   end  subroutine read_tau_amf  
+    end subroutine read_tau_amf  
+
   
     subroutine cires_indx_ugwp (pi,lat_r,j1_tau,j2_tau,w1_j1tau,w2_j2tau)
      
@@ -100,99 +101,61 @@ contains
       enddo
       return
     end subroutine cires_indx_ugwp   
+
     
-    subroutine tau_amf_interp(me, master, im, idate, fhour, j1_tau,j2_tau, ddy_j1, ddy_j2, tau_ddd)    
+    subroutine tau_amf_interp(im,fddd,j1_tau,j2_tau,ddy_j1,ddy_j2,tau_ddd)    
     use ccpp_kinds, only: kind_phys         
+    use  mpas_log,           only : mpas_log_write
+    use  mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
     implicit none
     
 !input    
-    integer, intent(in)               :: me, master
-    integer, intent(in)               :: im, idate(4)
-    real(kind=kind_phys), intent(in)  :: fhour
+    integer, intent(in)               :: im
+    real(kind=kind_phys), intent(in)  :: fddd
       
-    real(kind=kind_phys), intent(in), dimension(im) ::  ddy_j1, ddy_j2
-    integer             , intent(in), dimension(im) ::  j1_tau,j2_tau        
+    real(kind=kind_phys), intent(in),  dimension(im) ::  ddy_j1, ddy_j2
+    integer             , intent(in),  dimension(im) ::  j1_tau,j2_tau        
 !ouput    
-    real(kind=kind_phys),  dimension(im)   ::  tau_ddd
+    real(kind=kind_phys), intent(out), dimension(im) ::  tau_ddd
 !locals
 
     integer :: i, j1, j2, it1, it2 , iday
-    integer :: ddd    
-    real(kind=kind_phys)  :: tx1, tx2, w1, w2, fddd 
-!
-! define day of year ddd ..... from the old-fashioned "GFS-style"
-! 
-         ! call gfs_idate_calendar(idate, fhour, ddd, fddd)  
+    real(kind=kind_phys)  :: tx1, tx2, w1, w2
     
-            it1 = 2
+         it1 = 2
          do iday=1, ntau_d2t
-	    if (fddd .lt. days_limb(iday) ) then
-	    it2 = iday
-	    exit
-	    endif
-	 enddo
-	 
-	 it2 = min(it2,ntau_d2t)	 
-	 it1 = max(it2-1,1)
-	 if (it2 > ntau_d2t ) then
-	  print *, ' Error in time-interpolation for tau_amf_interp '	 
-	  print *, ' it1, it2, ntau_d2t ', it1, it2, ntau_d2t
-	  print *, ' Error in time-interpolation see cires_tauamf_data.F90 '	  
-	  stop
-	 endif
-	 
-	 w2 = (fddd-days_limb(it1))/(days_limb(it2)-days_limb(it1))
-	 w1 = 1.0-w2     
+            if (fddd .lt. days_limb(iday) ) then
+               it2 = iday
+               exit
+            endif
+         enddo
+
+         it2 = min(it2,ntau_d2t)
+         it1 = max(it2-1,1)
+         if (it2 > ntau_d2t ) then
+            call mpas_log_write(' Error in time-interpolation for tau_amf_interp ', &
+                                  messageType=MPAS_LOG_ERR)
+            call mpas_log_write(' it1, it2, ntau_d2t   $i $i $i ',                  &
+                                  intArgs=(/it1,it2,ntau_d2t/),messageType=MPAS_LOG_ERR)
+            call mpas_log_write(' Error in time-interpolation -- see cires_tauamf_data.F90 ', &
+                                  messageType=MPAS_LOG_CRIT)
+         endif
+ 
+         w2 = (fddd-days_limb(it1))/(days_limb(it2)-days_limb(it1))
+         w1 = 1.0-w2     
        
-      do i=1, im	 
-	 j1 = j1_tau(i)
-	 j2 = j2_tau(i)
-	 tx1 = tau_limb(j1, it1)*ddy_j1(i)+tau_limb(j2, it1)*ddy_j2(i)
-	 tx2 = tau_limb(j1, it2)*ddy_j1(i)+tau_limb(j2, it2)*ddy_j2(i)	 
-	 tau_ddd(i) =  tx1*w1 + w2*tx2
-      enddo
+         do i=1, im
+            j1 = j1_tau(i)
+            j2 = j2_tau(i)
+            tx1 = tau_limb(j1, it1)*ddy_j1(i)+tau_limb(j2, it1)*ddy_j2(i)
+            tx2 = tau_limb(j1, it2)*ddy_j1(i)+tau_limb(j2, it2)*ddy_j2(i)
+            tau_ddd(i) =  tx1*w1 + w2*tx2
+         enddo
+
+       ! Temporary lines
+       call mpas_log_write(' Real day of year = $r ', realArgs=(/fddd/),masterOnly=.true.)
+
              
     end subroutine tau_amf_interp  
-    
-!     subroutine gfs_idate_calendar(idate, fhour, ddd, fddd) 
-!     
-!     use ccpp_kinds, only: kind_phys 
-!     implicit none  
-! ! input     
-!     integer, intent(in)                 :: idate(4)
-!     real(kind=kind_phys), intent(in)   :: fhour
-! !out    
-!     integer, intent(out)                :: ddd    
-!     real(kind=kind_phys), intent(out)  :: fddd  
-! !
-! !locals
-! !
-!       real(kind=kind_phys) :: rjday
-!       integer              :: jdow, jdoy, jday
-!       real(8)              :: rinc(5)
-!       real(4)              :: rinc4(5)
-!       
-!       integer ::  iw3jdn
-!       integer :: jd1, jddd
-!       
-!       integer  idat(8),jdat(8)  
-!           
-!        
-!       idat(1:8)    = 0
-!       idat(1) = idate(4)
-!       idat(2) = idate(2)
-!       idat(3) = idate(3)
-!       idat(5) = idate(1)
-!       rinc(1:5)    = 0.
-!       rinc(2) = fhour
-! !    
-!       call w3movdat(rinc,  idat,jdat)
-! !     jdate(8)- date and time (yr, mo, day, [tz], hr, min, sec)
-!       jdow = 0
-!       jdoy = 0
-!       jday = 0
-!       call w3doxdat(jdat,jdow, ddd, jday)
-!       fddd = float(ddd) + jdat(5) / 24.        
-!     end  subroutine gfs_idate_calendar    
     
 end  module cires_tauamf_data

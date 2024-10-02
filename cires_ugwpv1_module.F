@@ -216,7 +216,7 @@ module  cires_ugwpv1_module
 ! Part-1 :init_global_gwdis               again "damn"-con_p
 !
     call init_global_gwdis(levs, zkm, pmb, kvg, ktg, krad, kion)
-			       
+
 !
 ! Part-2 :init_SOURCES_gws
 !
@@ -287,7 +287,7 @@ module  cires_ugwpv1_module
        
        call initsolv_wmsdis(knob_ugwp_wvspec(2), knob_ugwp_azdir(2),           &
            knob_ugwp_stoch(2), knob_ugwp_effac(2), do_physb_gwsrcs, kxw, knob_ugwp_version)
-	   
+   
      endif
 
 
@@ -359,15 +359,14 @@ module  cires_ugwpv1_module
 !
 !
         
-    subroutine ngwflux_update(im, levs, kdt, ddd, curdate, &
-	   tau_ddd, xlatd, sinlat,coslat, rain, tau_ngw)
-	    
-       use ccpp_kinds, only: kind_phys	           
+   subroutine ngwflux_update(im, levs, kdt,             &
+              tau_ddd, xlatd, sinlat,coslat, rain, tau_ngw)
+    
+       use ccpp_kinds, only: kind_phys
        implicit none
 !input
-       	 
+
        integer, intent(in) :: im,   levs, kdt     
-       integer, intent(in) :: ddd, curdate  
        
 !       integer, intent(in), dimension(im)                :: j1_tau,    j2_tau
 !       real(kind=kind_phys), intent(in), dimension(im)   :: ddy_j2tau, ddy_j1tau  
@@ -386,64 +385,42 @@ module  cires_ugwpv1_module
       
 ! 
 
-! code below inside cires_tauamf_data.F90	 
-!            it1 = 2
-!         do iday=1, ntau_d2t
-!	    if (float(ddd) .lt. days_limb(iday) ) then
-!	    it2 = iday
-!	    exit
-!	    endif
-!	 enddo
-!	 it2 = min(it2,ntau_d2t)	 
-!	 it1 = max(it2-1,1)
-!	 if (it2 > ntau_d2t ) then
-!	  print *, ' it1, it2, ntau_d2t ', it1, it2, ntau_d2t
-!	  stop
-!	 endif
-!	 w2 = (float(ddd)-days_limb(it1))/(days_limb(it2)-days_limb(it1))
-!	 w1 = 1.0-w2
-!      do i=1, im	 
-!	 j1 = j1_tau(i)
-!	 j2 = j2_tau(i)
-!	 tx1 = tau_limb(j1, it1)*ddy_j1tau(i)+tau_limb(j2, it1)*ddy_j2tau(i)
-!	 tx2 = tau_limb(j1, it2)*ddy_j1tau(i)+tau_limb(j2, it2)*ddy_j2tau(i)	 
-!	 tau_ddd(i) =  tx1*w1 + w2*tx2
 !
-! add modulattion by the total "rain"-strength Yudin et al.(2020-FV3GFS) and Bushell et al. (2015-UM/METO)
+! add modulation by the total "rain"-strength Yudin et al.(2020-FV3GFS) and Bushell et al. (2015-UM/METO)
 !
        do i=1, im        
-	 tau_3dt = tau_ngw(i) * w_merra + w_nomerra *tau_ddd(i)
-         	 
-	 if (w_rain > 0. .and. rain(i) > 0.) then 
-	 
+          tau_3dt = tau_ngw(i) * w_merra + w_nomerra *tau_ddd(i)
+ 
+          if (w_rain > 0. .and. rain(i) > 0.) then 
+
              wlat =  abs(xlatd(i))
-	     	 	 	 
-	  if (wlat <= rain_lat .and. rain(i) > rain_lim) then 	 
-              flat_rain = wlat/rain_lat
-	      rw1 = 0.75 * flat_rain  ; rw2 = 1.-rw1
-	      
-	      tau_rain = tau_3dt * rw1 + rw2 * mtau_rain*min(rain_max, rain(i))/rain_lim
-	      tau_rain = tau_3dt*(1.-w_rain) + w_rain* tau_rain
+
+             if (wlat <= rain_lat .and. rain(i) > rain_lim) then
+                flat_rain = wlat/rain_lat
+                rw1 = 0.75 * flat_rain  ; rw2 = 1.-rw1
+
+                tau_rain = tau_3dt * rw1 + rw2 * mtau_rain*min(rain_max, rain(i))/rain_lim
+                tau_rain = tau_3dt*(1.-w_rain) + w_rain* tau_rain
 !
 ! restict variations from the "tau_ngw" without precip-impact
 !	      
 !      real, parameter    :: ft_min =0.5*tau_g5 < tau_rain < ft_max =2. *tau_g5	     
 ! 	      
-	      if (tau_rain < ft_min *tau_3dt) tau_rain = ft_min *tau_3dt
-	      if (tau_rain > ft_max *tau_3dt) tau_rain = ft_max *tau_3dt  
+                if (tau_rain < ft_min *tau_3dt) tau_rain = ft_min *tau_3dt
+                if (tau_rain > ft_max *tau_3dt) tau_rain = ft_max *tau_3dt  
     
-	      tau_3dt  =  tau_rain  
-	          
-	  endif 
-	  if (metoum_rain == 1) then	     
-	     tau_rain  =  min( sqrt(rain(i))*pbase_um, tau_ngw_max)
-	     tau_3dt = max(tau_ngw_min, tau_rain)
-	  endif
-	 endif 
-	  tau_ngw(i) = tau_3dt    
-      enddo   
+                tau_3dt  =  tau_rain  
+          
+             endif 
+             if (metoum_rain == 1) then
+                tau_rain  =  min( sqrt(rain(i))*pbase_um, tau_ngw_max)
+                tau_3dt = max(tau_ngw_min, tau_rain)
+             endif
+          endif 
+          tau_ngw(i) = tau_3dt    
+       enddo   
                         
-      end subroutine ngwflux_update        
+   end subroutine ngwflux_update        
 !    
  end module cires_ugwpv1_module
 

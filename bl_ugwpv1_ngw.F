@@ -17,7 +17,6 @@ module bl_ugwpv1_ngw
 !
 
 
-use mpas_log, only : mpas_log_write
 use ccpp_kinds, only: kind_phys
 use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update
 
@@ -31,8 +30,7 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
    use ugwp_common
    use mpas_atmphys_constants, only : P0
    use mpas_constants, only : pii, gravity, omega, a, cp, rgas, rv_moist=>rv
-   use cires_tauamf_data,   only:  cires_indx_ugwp,  read_tau_amf
-   use cires_tauamf_data,   only:  tau_limb, days_limb, ugwp_taulat
+   use cires_tauamf_data,   only:  cires_indx_ugwp, read_tau_amf, tau_limb, days_limb, ugwp_taulat
 
    implicit none
 
@@ -55,7 +53,6 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
 
    real(kind=kind_phys), dimension(levs) :: zu  ! vert. coord. zeta at u-levels centers (m)
 
-   call mpas_log_write('Ahoj svete:  Here we are in ugwpv1_ngw_init!',masterOnly=.true.)
 
    pi    = pii
    arad  = a        ! Radius of earth (m)
@@ -120,24 +117,55 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
 end subroutine ugwpv1_ngw_init
 
 
-subroutine ugwpv1_ngw_run(xlat,its,ite)
+subroutine ugwpv1_ngw_run(xlat,ddy_j1tau,ddy_j2tau,jindx1_tau,jindx2_tau,r_DoY,its,ite)
 
    use ugwp_common
+   use ugwp_wmsdis_init,  only :  tamp_mpa
+   use cires_tauamf_data,   only:  tau_amf_interp
+   use cires_ugwpv1_triggers,  only : slat_geos5_2020
 
    implicit none
 
-   real(kind=kind_phys), intent(in) :: xlat(:)
+   real(kind=kind_phys), intent(in) :: xlat(:),ddy_j1tau(:),ddy_j2tau(:)
+   real(kind=kind_phys), intent(in) :: r_DoY
 
+   integer, intent(in) :: jindx1_tau(:),jindx2_tau(:)
    integer, intent(in) :: its,ite
 
+   integer :: im
+
+   real(kind=kind_phys), dimension(its:ite) ::    &
+                         xlat_d,   &   ! latitude in degrees
+                         tau_ngw,  &   ! momentum flux due to nonstationary gravity waves
+                         tau_amf       ! source NGW momentum flux
+
+
+   im = ite-its+1
+   xlat_d = xlat*rad_to_deg
+   tau_ngw(:) = 0.
 
 
 
-   call mpas_log_write('Ahoj svete:  Here we are in ugwpv1_ngw_run!',masterOnly=.true.)
+   ! Interpolate NGW sources 'tau_amf' in space and time
+   call tau_amf_interp(im, r_DoY, jindx1_tau, jindx2_tau,  &
+                       ddy_j1tau, ddy_j2tau, tau_amf)
 
-   ! call  slat_geos5_2020(im, tamp_mpa, xlat_d, tau_ngw)
 
-   
+   !==================================================================
+   !       call slat_geos5_tamp_v1(im, tamp_mpa, xlat_d, tau_ngw)
+   !
+   ! 2020 updates of MERRA/GEOS tau_ngw for the C96-QBO FV3GFS-127L runs
+   !==================================================================
+   call slat_geos5_2020(im, tamp_mpa, xlat_d, tau_ngw)
+
+
+   call ngwflux_update(im, levs, kdt,                   &
+        tau_amf, xlat_d, sinlat,coslat, rain, tau_ngw)
+
+
+
+
+
 
 end subroutine ugwpv1_ngw_run
 
