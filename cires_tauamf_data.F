@@ -152,9 +152,6 @@ contains
             tau_ddd(i) =  tx1*w1 + w2*tx2
          enddo
 
-       ! Temporary lines
-       call mpas_log_write(' Real day of year = $r ', realArgs=(/fddd/),masterOnly=.true.)
-
              
     end subroutine tau_amf_interp  
     

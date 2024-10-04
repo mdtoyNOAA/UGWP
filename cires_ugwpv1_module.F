@@ -359,20 +359,15 @@ module  cires_ugwpv1_module
 !
 !
         
-   subroutine ngwflux_update(im, levs, kdt,             &
-              tau_ddd, xlatd, sinlat,coslat, rain, tau_ngw)
+   subroutine ngwflux_update(im, tau_ddd, xlatd, rain, tau_ngw)
     
        use ccpp_kinds, only: kind_phys
        implicit none
-!input
 
-       integer, intent(in) :: im,   levs, kdt     
-       
-!       integer, intent(in), dimension(im)                :: j1_tau,    j2_tau
-!       real(kind=kind_phys), intent(in), dimension(im)   :: ddy_j2tau, ddy_j1tau  
-                            
-       real(kind=kind_phys), intent(in), dimension(im)   :: xlatd, sinlat,coslat      
-       real(kind=kind_phys), intent(in), dimension(im)   :: rain, tau_ddd
+!input
+       integer, intent(in) :: im 
+       real(kind=kind_phys), intent(in), dimension(im) :: xlatd   
+       real(kind=kind_phys), intent(in), dimension(im) :: rain, tau_ddd
         
        real(kind=kind_phys), intent(inout), dimension(im) ::  tau_ngw           
 !

@@ -46,8 +46,6 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
    logical :: exists
    real    :: dxsg
    integer :: k
-   ! Temporary line
-   integer :: i
 
    real(kind=kind_phys) :: p0_std
 
@@ -117,16 +115,19 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
 end subroutine ugwpv1_ngw_init
 
 
-subroutine ugwpv1_ngw_run(xlat,ddy_j1tau,ddy_j2tau,jindx1_tau,jindx2_tau,r_DoY,its,ite)
+subroutine ugwpv1_ngw_run(xlat,raincv,rainncv,ddy_j1tau,ddy_j2tau,   &
+                          jindx1_tau,jindx2_tau,r_DoY,its,ite)
 
    use ugwp_common
-   use ugwp_wmsdis_init,  only :  tamp_mpa
-   use cires_tauamf_data,   only:  tau_amf_interp
-   use cires_ugwpv1_triggers,  only : slat_geos5_2020
+   use ugwp_wmsdis_init,      only: tamp_mpa
+   use cires_tauamf_data,     only: tau_amf_interp
+   use cires_ugwpv1_triggers, only: slat_geos5_2020
 
    implicit none
 
    real(kind=kind_phys), intent(in) :: xlat(:),ddy_j1tau(:),ddy_j2tau(:)
+   real(kind=kind_phys), intent(in) :: raincv(:),  &   ! time-step convective precipitation (mm)
+                                       rainncv(:)      ! time-step grid-scale precipitation (mm)
    real(kind=kind_phys), intent(in) :: r_DoY
 
    integer, intent(in) :: jindx1_tau(:),jindx2_tau(:)
@@ -137,13 +138,14 @@ subroutine ugwpv1_ngw_run(xlat,ddy_j1tau,ddy_j2tau,jindx1_tau,jindx2_tau,r_DoY,i
    real(kind=kind_phys), dimension(its:ite) ::    &
                          xlat_d,   &   ! latitude in degrees
                          tau_ngw,  &   ! momentum flux due to nonstationary gravity waves
-                         tau_amf       ! source NGW momentum flux
+                         tau_amf,  &   ! source NGW momentum flux
+                         rain          ! total rain at this time step (m)
 
 
    im = ite-its+1
    xlat_d = xlat*rad_to_deg
    tau_ngw(:) = 0.
-
+   rain(:) = (raincv(:)+rainncv(:))*0.001_kind_phys  ! converting to meters
 
 
    ! Interpolate NGW sources 'tau_amf' in space and time
@@ -159,9 +161,7 @@ subroutine ugwpv1_ngw_run(xlat,ddy_j1tau,ddy_j2tau,jindx1_tau,jindx2_tau,r_DoY,i
    call slat_geos5_2020(im, tamp_mpa, xlat_d, tau_ngw)
 
 
-   call ngwflux_update(im, levs, kdt,                   &
-        tau_amf, xlat_d, sinlat,coslat, rain, tau_ngw)
-
+   call ngwflux_update(im, tau_amf, xlat_d, rain, tau_ngw)
 
 
 
