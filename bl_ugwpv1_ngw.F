@@ -18,8 +18,8 @@ module bl_ugwpv1_ngw
 
 
 use ccpp_kinds, only: kind_phys
-use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update
-
+use cires_ugwpv1_module, only: cires_ugwpv1_init, ngwflux_update
+use cires_ugwpv1_solv2,  only: cires_ugwpv1_ngw_solv2
 
 
 contains
@@ -115,8 +115,8 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
 end subroutine ugwpv1_ngw_init
 
 
-subroutine ugwpv1_ngw_run(xlat,raincv,rainncv,ddy_j1tau,ddy_j2tau,   &
-                          jindx1_tau,jindx2_tau,r_DoY,its,ite)
+subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,        &
+                          jindx1_tau,jindx2_tau,r_DoY,kdt,dtp,its,ite,levs)
 
    use ugwp_common
    use ugwp_wmsdis_init,      only: tamp_mpa
@@ -125,25 +125,29 @@ subroutine ugwpv1_ngw_run(xlat,raincv,rainncv,ddy_j1tau,ddy_j2tau,   &
 
    implicit none
 
-   real(kind=kind_phys), intent(in) :: xlat(:),ddy_j1tau(:),ddy_j2tau(:)
+   real(kind=kind_phys), intent(in) :: xlatd(:),ddy_j1tau(:),ddy_j2tau(:)
    real(kind=kind_phys), intent(in) :: raincv(:),  &   ! time-step convective precipitation (mm)
                                        rainncv(:)      ! time-step grid-scale precipitation (mm)
-   real(kind=kind_phys), intent(in) :: r_DoY
+   real(kind=kind_phys), intent(in) :: r_DoY,dtp
 
    integer, intent(in) :: jindx1_tau(:),jindx2_tau(:)
-   integer, intent(in) :: its,ite
+   integer, intent(in) :: kdt,its,ite,levs
 
    integer :: im
 
    real(kind=kind_phys), dimension(its:ite) ::    &
-                         xlat_d,   &   ! latitude in degrees
                          tau_ngw,  &   ! momentum flux due to nonstationary gravity waves
                          tau_amf,  &   ! source NGW momentum flux
                          rain          ! total rain at this time step (m)
 
+! Temporary lines
+   real(kind=kind_phys), dimension(ite-its+1,levs) :: tgrs, ugrs, vgrs, q1, prsl, zmet,  &
+                                        prslk,dudt_ngw,dvdt_ngw,dtdt_ngw,kdis_ngw
+   real(kind=kind_phys), dimension(ite-its+1,levs+1) :: prsi, zmeti
+   real(kind=kind_phys), dimension(ite-its+1) :: zngw
+
 
    im = ite-its+1
-   xlat_d = xlat*rad_to_deg
    tau_ngw(:) = 0.
    rain(:) = (raincv(:)+rainncv(:))*0.001_kind_phys  ! converting to meters
 
@@ -154,16 +158,18 @@ subroutine ugwpv1_ngw_run(xlat,raincv,rainncv,ddy_j1tau,ddy_j2tau,   &
 
 
    !==================================================================
-   !       call slat_geos5_tamp_v1(im, tamp_mpa, xlat_d, tau_ngw)
+   !       call slat_geos5_tamp_v1(im, tamp_mpa, xlatd, tau_ngw)
    !
    ! 2020 updates of MERRA/GEOS tau_ngw for the C96-QBO FV3GFS-127L runs
    !==================================================================
-   call slat_geos5_2020(im, tamp_mpa, xlat_d, tau_ngw)
+   call slat_geos5_2020(im, tamp_mpa, xlatd, tau_ngw)
 
+   call ngwflux_update(im, tau_amf, xlatd, rain, tau_ngw)
 
-   call ngwflux_update(im, tau_amf, xlat_d, rain, tau_ngw)
-
-
+   call cires_ugwpv1_ngw_solv2(im,   levs,  kdt, dtp,   &
+                  tau_ngw, tgrs, ugrs,  vgrs,   q1, prsl, prsi,     &
+                  zmet, zmeti,prslk,   xlatd,      &
+                  dudt_ngw, dvdt_ngw, dtdt_ngw, kdis_ngw, zngw)
 
 
 

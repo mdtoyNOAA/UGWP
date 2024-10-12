@@ -11,15 +11,21 @@ OBJS = \
 	cires_ugwpv1_initialize.o \
 	cires_ugwpv1_module.o \
 	cires_tauamf_data.o \
-	cires_ugwpv1_triggers.o
+	cires_ugwpv1_triggers.o \
+	cires_ugwpv1_solv2.o
 
 # DEPENDENCIES:
 bl_ugwpv1_ngw.o: \
 	cires_ugwpv1_module.o \
 	cires_tauamf_data.o \
-	cires_ugwpv1_triggers.o
+	cires_ugwpv1_triggers.o \
+	cires_ugwpv1_solv2.o
 
 cires_ugwpv1_module.o: \
+	cires_ugwpv1_initialize.o
+
+cires_ugwpv1_solv2.o: \
+	cires_ugwpv1_module.o \
 	cires_ugwpv1_initialize.o
 
 UGWP_physics: $(OBJS)
