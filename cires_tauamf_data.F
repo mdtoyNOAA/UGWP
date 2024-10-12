@@ -63,7 +63,8 @@ contains
   
     subroutine cires_indx_ugwp (pi,lat_r,j1_tau,j2_tau,w1_j1tau,w2_j2tau)
      
-    use ccpp_kinds, only: kind_phys
+    use ccpp_kinds,  only: kind_phys
+    use ugwp_common, only: rad_to_deg
 
     implicit none
     
@@ -77,10 +78,8 @@ contains
 
       integer :: i,j, j1, j2     
       real(kind=kind_phys), dimension(size(lat_r)) :: dlat    ! latitude in degrees
-      real(kind=kind_phys) :: rad2deg
 !     
-      rad2deg = 180._kind_phys/pi
-      dlat(:) = rad2deg*lat_r(:)    ! Calculate latitude in degrees
+      dlat(:) = rad_to_deg*lat_r(:)    ! Calculate latitude in degrees
       do j=1,size(lat_r)
         j2_tau(j) = ntau_d1y
         do i=1,ntau_d1y
