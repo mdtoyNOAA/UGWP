@@ -14,10 +14,9 @@ contains
 !  they are out of given column
 !---------------------------------------------------
 
-      subroutine cires_ugwpv1_ngw_solv2(im, levs, kdt, dtp, &
-                 tau_ngw, tm , um, vm, qm, prsl, prsi, zmet,  zmeti, prslk, &
-                 xlatd,                                    &
-                 pdudt, pdvdt, pdtdt, dked, zngw)
+      subroutine cires_ugwpv1_ngw_solv2(im, levs, kdt, dtp,          &
+                 tau_ngw, tm, um, vm, qm, prsl, prsi, zmet, zmeti,   &
+                 prslk, xlatd, pdudt, pdvdt, pdtdt, dked, zngw)
 !
 !--------------------------------------------------------------------------------
 !      nov 2015 alternative gw-solver for nggps-wam
@@ -993,7 +992,7 @@ contains
 
        enddo        ! J-loop
 !
-       RETURN
+       ! RETURN
 
 !=================================   diag print after "return" ======================
        if (kdt ==1) then
@@ -1004,18 +1003,18 @@ contains
           call mpas_log_write('ugwpv1: zcimax= $r   zcimin= $r',                          &
                   realArgs=(/maxval(zci),minval(zci)/),masterOnly=.true.) 
 
-          call mpas_log_write('vgw done nstab $i',intArgs=(/nstab/),masterOnly=.true.)
-          call mpas_log_write('$r $r vgw ax  ugwp',                                       &
+          call mpas_log_write('vugwpv1: gw done nstab $i',intArgs=(/nstab/),masterOnly=.true.)
+          call mpas_log_write('$ugwpv1: r $r vgw ax  ugwp',                               &
                   realArgs=(/maxval(pdudt)*86400.,minval(pdudt)*86400./),masterOnly=.true.)
-          call mpas_log_write('$r $r vgw ay  ugwp',                                       &
+          call mpas_log_write('$ugwpv1: r $r vgw ay  ugwp',                               &
                   realArgs=(/maxval(pdvdt)*86400.,minval(pdvdt)*86400./),masterOnly=.true.)
-          call mpas_log_write('$r $r vgw keddy m2/sec  ugwp',                             &
+          call mpas_log_write('$ugwpv1: r $r vgw keddy m2/sec  ugwp',                     &
                   realArgs=(/maxval(dked),minval(dked)*1/),masterOnly=.true.)
-          call mpas_log_write('$r $r vgw eps  ugwp',                                      &
+          call mpas_log_write('$ugwpv1: r $r vgw eps  ugwp',                              &
                   realArgs=(/maxval(pdtdt)*86400.,minval(pdtdt)*86400/),masterOnly=.true.)
        endif
 !=================================
-       return       
+     return       
      end subroutine cires_ugwpv1_ngw_solv2
 
 

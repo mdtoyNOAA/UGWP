@@ -115,8 +115,10 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
 end subroutine ugwpv1_ngw_init
 
 
-subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,        &
-                          jindx1_tau,jindx2_tau,r_DoY,kdt,dtp,its,ite,levs)
+subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,     &
+                jindx1_tau,jindx2_tau,r_DoY,kdt,dtp,ugrs,vgrs,          &
+                tgrs,q1,prsl,prslk,prsi,zl,zi,rublten,rvblten,rthblten, &
+                its,ite,levs)
 
    use ugwp_common
    use ugwp_wmsdis_init,      only: tamp_mpa
@@ -126,12 +128,27 @@ subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,        &
    implicit none
 
    real(kind=kind_phys), intent(in) :: xlatd(:),ddy_j1tau(:),ddy_j2tau(:)
-   real(kind=kind_phys), intent(in) :: raincv(:),  &   ! time-step convective precipitation (mm)
-                                       rainncv(:)      ! time-step grid-scale precipitation (mm)
+   real(kind=kind_phys), intent(in) ::            &
+                     raincv(:),  &   ! time-step convective precipitation (mm)
+                     rainncv(:)      ! time-step grid-scale precipitation (mm)
+   real(kind=kind_phys), intent(in) ::            &
+                     ugrs(:,:),  &   ! zonal wind (m/s)
+                     vgrs(:,:),  &   ! meridional wind (m/2)
+                     tgrs(:,:),  &   ! temperature (K)
+                     q1(:,:),    &   ! water vapor mixing ratio (kg/kg)
+                     prsl(:,:),  &   ! mid-layer pressure (Pa)
+                     prslk(:,:), &   ! mid-layer dimensionless Exner function (-)
+                     prsi(:,:),  &   ! interface pressure (Pa)
+                     zl(:,:),    &   ! mid-layer geopotential height (m)
+                     zi(:,:)         ! interface geopotential height (m)
+                   
    real(kind=kind_phys), intent(in) :: r_DoY,dtp
 
    integer, intent(in) :: jindx1_tau(:),jindx2_tau(:)
    integer, intent(in) :: kdt,its,ite,levs
+
+   real(kind=kind_phys), intent(inout) :: rublten(:,:),rvblten(:,:),rthblten(:,:)
+
 
    integer :: im
 
@@ -140,11 +157,19 @@ subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,        &
                          tau_amf,  &   ! source NGW momentum flux
                          rain          ! total rain at this time step (m)
 
+
 ! Temporary lines
-   real(kind=kind_phys), dimension(ite-its+1,levs) :: tgrs, ugrs, vgrs, q1, prsl, zmet,  &
-                                        prslk,dudt_ngw,dvdt_ngw,dtdt_ngw,kdis_ngw
-   real(kind=kind_phys), dimension(ite-its+1,levs+1) :: prsi, zmeti
+   real(kind=kind_phys), dimension(ite-its+1,levs) ::  & 
+                                        dudt_ngw,dvdt_ngw,dtdt_ngw,kdis_ngw
    real(kind=kind_phys), dimension(ite-its+1) :: zngw
+
+
+
+   ! Initialize ngw tendencies   ! NOTE:  These should be initialized in earlier subroutine, perhaps
+   dudt_ngw = 0.0      ; dvdt_ngw = 0.0 ;      dtdt_ngw = 0.0
+
+   ! Initialize ngw diagnostics
+   kdis_ngw = 0.0      ; zngw = 0.0     ! NOTE:  These variables may be output at a later date
 
 
    im = ite-its+1
@@ -166,16 +191,15 @@ subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,        &
 
    call ngwflux_update(im, tau_amf, xlatd, rain, tau_ngw)
 
-   call cires_ugwpv1_ngw_solv2(im,   levs,  kdt, dtp,   &
-                  tau_ngw, tgrs, ugrs,  vgrs,   q1, prsl, prsi,     &
-                  zmet, zmeti,prslk,   xlatd,      &
-                  dudt_ngw, dvdt_ngw, dtdt_ngw, kdis_ngw, zngw)
+   call cires_ugwpv1_ngw_solv2(im, levs, kdt, dtp, tau_ngw, tgrs,    &
+                  ugrs, vgrs, q1, prsl, prsi, zl, zi, prslk,         &
+                  xlatd, dudt_ngw, dvdt_ngw, dtdt_ngw, kdis_ngw, zngw)
 
 
 
+
+return
 end subroutine ugwpv1_ngw_run
-
-
 
 
 end module bl_ugwpv1_ngw
