@@ -118,7 +118,7 @@ end subroutine ugwpv1_ngw_init
 subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,     &
                 jindx1_tau,jindx2_tau,r_DoY,kdt,dtp,ugrs,vgrs,          &
                 tgrs,q1,prsl,prslk,prsi,zl,zi,rublten,rvblten,rthblten, &
-                its,ite,levs)
+                ugwp_diags,dudt_ngw,dvdt_ngw,dtdt_ngw,its,ite,levs)
 
    use ugwp_common
    use ugwp_wmsdis_init,      only: tamp_mpa
@@ -147,29 +147,38 @@ subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,     &
    integer, intent(in) :: jindx1_tau(:),jindx2_tau(:)
    integer, intent(in) :: kdt,its,ite,levs
 
+   logical, intent(in) :: ugwp_diags
+
+   real(kind=kind_phys), intent(out), optional :: dudt_ngw(:,:),dvdt_ngw(:,:),  &
+                                                    dtdt_ngw(:,:)
+
    real(kind=kind_phys), intent(inout) :: rublten(:,:),rvblten(:,:),rthblten(:,:)
 
 
-   integer :: im
+   integer :: im,k
 
    real(kind=kind_phys), dimension(its:ite) ::    &
                          tau_ngw,  &   ! momentum flux due to nonstationary gravity waves
                          tau_amf,  &   ! source NGW momentum flux
                          rain          ! total rain at this time step (m)
 
-
-! Temporary lines
    real(kind=kind_phys), dimension(ite-its+1,levs) ::  & 
-                                        dudt_ngw,dvdt_ngw,dtdt_ngw,kdis_ngw
+                                        pdudt_ngw,pdvdt_ngw,pdtdt_ngw,kdis_ngw
    real(kind=kind_phys), dimension(ite-its+1) :: zngw
 
 
 
-   ! Initialize ngw tendencies   ! NOTE:  These should be initialized in earlier subroutine, perhaps
-   dudt_ngw = 0.0      ; dvdt_ngw = 0.0 ;      dtdt_ngw = 0.0
+   ! Initialize ngw tendencies
+   pdudt_ngw = 0.0      ; pdvdt_ngw = 0.0 ;      pdtdt_ngw = 0.0
 
    ! Initialize ngw diagnostics
    kdis_ngw = 0.0      ; zngw = 0.0     ! NOTE:  These variables may be output at a later date
+
+
+   ! Initialize optional diagnostic output
+   if ( ugwp_diags ) then
+       dudt_ngw = 0.0 ;   dvdt_ngw = 0.0 ;   dtdt_ngw = 0.0
+   endif
 
 
    im = ite-its+1
@@ -191,10 +200,28 @@ subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,     &
 
    call ngwflux_update(im, tau_amf, xlatd, rain, tau_ngw)
 
-   call cires_ugwpv1_ngw_solv2(im, levs, kdt, dtp, tau_ngw, tgrs,    &
-                  ugrs, vgrs, q1, prsl, prsi, zl, zi, prslk,         &
-                  xlatd, dudt_ngw, dvdt_ngw, dtdt_ngw, kdis_ngw, zngw)
+   call cires_ugwpv1_ngw_solv2(im, levs, kdt, dtp, tau_ngw, tgrs,        &
+                  ugrs, vgrs, q1, prsl, prsi, zl, zi, prslk,             &
+                  xlatd, pdudt_ngw, pdvdt_ngw, pdtdt_ngw, kdis_ngw, zngw)
 
+   ! Convert Dt/Dt to D(theta)Dt and add to rthblten
+   do k = 1,levs
+      rthblten(:,k) = rthblten(:,k) + pdtdt_ngw(:,k)/prslk(:,k)
+   enddo
+
+   ! Update u,v tendencies
+   do k = 1,levs
+      rublten(:,k) = rublten(:,k) + pdudt_ngw(:,k)
+      rvblten(:,k) = rvblten(:,k) + pdvdt_ngw(:,k)
+   enddo
+
+
+   ! Save optional diagnostics
+   if ( ugwp_diags ) then
+      dudt_ngw = pdudt_ngw
+      dvdt_ngw = pdvdt_ngw
+      dtdt_ngw = pdtdt_ngw
+   endif
 
 
 

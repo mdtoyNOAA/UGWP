@@ -642,7 +642,6 @@
 	 
 	RETURN	  	 
 !===================  Diag prints after return  ====================
-         ! Ahoj svete
          ! if (me == master) then
          !   print *
          !   print *,  'ugwp_v0: zcimin=' , zcimin

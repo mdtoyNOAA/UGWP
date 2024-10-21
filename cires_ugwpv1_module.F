@@ -224,7 +224,6 @@ module  cires_ugwpv1_module
 !    
 ! call init-solver for "stationary" multi-wave spectra and sub-grid oro
 !
-! Ahoj svete:  Comment out these lines for now
 !    call init_oro_gws( knob_ugwp_wvspec(1), knob_ugwp_azdir(1), &
 !         knob_ugwp_stoch(1), knob_ugwp_effac(1), kxw       )
 !
