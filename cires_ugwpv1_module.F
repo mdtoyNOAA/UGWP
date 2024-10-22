@@ -1,4 +1,4 @@
-!>\file cires_ugwpv1_module.F90
+!>\file cires_ugwpv1_module.F
 !!
 
 module  cires_ugwpv1_module
@@ -17,7 +17,6 @@ module  cires_ugwpv1_module
     use  ugwp_wmsdis_init,  only : tau_min, tamp_mpa   
 
     implicit none
-    logical            :: module_is_initialized
 
     character(len=8)   :: strsolver='pss-1986'
     logical            :: do_physb_gwsrcs = .false.        ! control for physics-based GW-sources
@@ -101,7 +100,6 @@ module  cires_ugwpv1_module
 !
    real(kind=kind_phys), allocatable :: kvg(:), ktg(:), krad(:), kion(:)
    real(kind=kind_phys), allocatable :: zkm(:), pmb(:)
-   real(kind=kind_phys), allocatable :: rfdis(:), rfdist(:)
 !
 ! RF-not active now
 !   
@@ -290,68 +288,35 @@ module  cires_ugwpv1_module
      endif
 
 
-!======================
-    module_is_initialized = .true.
-    call mpas_log_write(' CIRES_ugwpV1 is initialized $l ',     &
-                        logicArgs=(/module_is_initialized/), masterOnly=.true.)
-
     end subroutine cires_ugwpv1_init
 
-    
-!=============================================
 
-     subroutine cires_ugwp_advance
-!-----------------------------------------------------------------------
-!   FV3-dycore and CCPP-physics has limited options to
-!   add "horizontal" gradients of winds and temp-re to
-! compute GW-triggers:    reserved option if  it will be funded ......
-!
-! the day-to-day variable sources/spectra and diagnostics for stochastic "triggers"
-!     
-! diagnose GW-source functions * FGF + OKWP + SGO/CONV from IAU-fields
-!     and use for stochastic GWP-sources "memory"
-!
-!   this option is not active  due to "weak" flexibility
-!     in communication between "ccpp/gfsphysics" and FV3-dycore
-!        extension of State%in is needed to pass horizontal gradients
-!        winds and temperature to compute "spontatneous" GW triggers
-!-----------------------------------------------------------------------
-      implicit none
-!
-! update GW sources and dissipation
-!  a) physics-based GW triggers eliminated from cires_ugwpv1_triggers.F90
-!  b) stochastic-based spectra and amplitudes is not considered 
-!  c) use "memory" on GW-spectra from previous time-step is not considered 
-!  d) update "background" dissipation of GWs as needed (option for FV3WAM)
-!
-     end subroutine cires_ugwp_advance
- 
+!    
 !      
 ! -----------------------------------------------------------------------
 ! finalize  of cires_ugwp_dealloc
 ! -----------------------------------------------------------------------
-
 
   subroutine cires_ugwp_dealloc
 !
 ! deallocate sources/spectra & some diagnostics need to find where "deaalocate them"
 ! before "end" of the FV3GFS
 !
+    use  cires_tauamf_data, only : ugwp_taulat,tau_limb,days_limb
+
     implicit none
 !
-!   deallocate arrays employed in:
-!     cires_ugwp_advance / cires_ugwp_driver / cires_ugwp_init
+!   deallocate arrays employed in ugwpv1-ngw subroutines
 !
    if (allocated (kvg)) deallocate (kvg)
    if (allocated (ktg)) deallocate (ktg)
-   if (allocated (krad)) deallocate (krad)   
-   if (allocated (kion)) deallocate (kion)   
-   if (allocated (zkm)) deallocate (zkm) 
-   if (allocated (pmb)) deallocate (pmb) 
-!   if (allocated (ugwp_taulat))  deallocate(ugwp_taulat) 
-!   if (allocated (tau_limb)) deallocate (tau_limb)   
-!   if (allocated (days_limb)) deallocate(days_limb)                    
- 
+   if (allocated (krad)) deallocate (krad)
+   if (allocated (kion)) deallocate (kion)
+   if (allocated (zkm)) deallocate (zkm)
+   if (allocated (pmb)) deallocate (pmb)
+   if (allocated (ugwp_taulat))  deallocate(ugwp_taulat)
+   if (allocated (tau_limb)) deallocate (tau_limb)
+   if (allocated (days_limb)) deallocate(days_limb)
  
    end subroutine cires_ugwp_dealloc
 

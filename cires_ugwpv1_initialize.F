@@ -1,4 +1,4 @@
-!>\file cires_ugwpv1_initialize.F90
+!>\file cires_ugwpv1_initialize.F
 !!
 
 !===============================

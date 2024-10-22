@@ -1,4 +1,4 @@
-!>\file cires_ugwpv1_solv2.F90
+!>\file cires_ugwpv1_solv2.F
 !!
 
 module cires_ugwpv1_solv2
