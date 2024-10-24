@@ -1,6 +1,6 @@
 module cires_tauamf_data
 
-use ccpp_kinds, only: kind_phys
+use ccpp_kind_types, only: kind_phys
 !...........................................................................................
 ! tabulated GW-sources: GRACILE/Ern et al., 2018 and/or Resolved GWs from C384-Annual run
 !...........................................................................................
@@ -63,7 +63,7 @@ contains
   
     subroutine cires_indx_ugwp (pi,lat_r,j1_tau,j2_tau,w1_j1tau,w2_j2tau)
      
-    use ccpp_kinds,  only: kind_phys
+    use ccpp_kind_types, only: kind_phys
     use ugwp_common, only: rad_to_deg
 
     implicit none
@@ -105,7 +105,7 @@ contains
 
     
     subroutine tau_amf_interp(im,fddd,j1_tau,j2_tau,ddy_j1,ddy_j2,tau_ddd)    
-    use ccpp_kinds, only: kind_phys         
+    use ccpp_kind_types, only: kind_phys         
     use  mpas_log,           only : mpas_log_write
     use  mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
     implicit none

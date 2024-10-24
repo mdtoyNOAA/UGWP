@@ -17,7 +17,7 @@ module bl_ugwpv1_ngw
 !
 
 
-use ccpp_kinds, only: kind_phys
+use ccpp_kind_types,     only: kind_phys
 use cires_ugwpv1_module, only: cires_ugwpv1_init, ngwflux_update
 use cires_ugwpv1_solv2,  only: cires_ugwpv1_ngw_solv2
 

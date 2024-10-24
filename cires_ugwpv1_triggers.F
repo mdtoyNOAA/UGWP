@@ -1,6 +1,6 @@
 module cires_ugwpv1_triggers
 
-use ccpp_kinds, only: kind_phys
+use ccpp_kind_types, only: kind_phys
 
 contains
 

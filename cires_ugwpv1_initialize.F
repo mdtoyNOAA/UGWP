@@ -15,7 +15,7 @@
     
     module ugwp_common
 !
-     use ccpp_kinds,  only : kind_phys
+     use ccpp_kind_types,  only : kind_phys
 			 
      implicit none
      
@@ -64,7 +64,7 @@
      
       subroutine init_nazdir(naz,  xaz,  yaz)
       
-      use ccpp_kinds,  only : kind_phys
+      use ccpp_kind_types, only : kind_phys
       use ugwp_common, only :  pi2
       
       implicit none
@@ -102,8 +102,8 @@
 !===================================================
      subroutine init_global_gwdis(levs, zkm, pmb, kvg, ktg, krad, kion)
 !				      
-     use ccpp_kinds,    only : kind_phys 
-     use ugwp_common,   only : pih, pi  
+     use ccpp_kind_types, only : kind_phys 
+     use ugwp_common,     only : pih, pi  
      
      implicit none
      integer , intent(in)                 :: levs
@@ -189,7 +189,7 @@
 !=========================================================================
     module ugwp_conv_init
     
-     use ccpp_kinds,            only : kind_phys
+     use ccpp_kind_types,            only : kind_phys
 
      
      implicit none
@@ -269,7 +269,7 @@
 !=========================================================================
 
    module ugwp_fjet_init
-   use ccpp_kinds,            only : kind_phys   
+   use ccpp_kind_types,      only : kind_phys   
 
    
    
@@ -327,7 +327,7 @@
 !
      module ugwp_okw_init
 !=========================================================================
-       use ccpp_kinds,            only : kind_phys      
+       use ccpp_kind_types,      only : kind_phys      
      
        implicit none
 
@@ -389,7 +389,7 @@
 !===============================
 
   module ugwp_lsatdis_init
-     use ccpp_kinds,            only : kind_phys    
+     use ccpp_kind_types,        only : kind_phys    
      implicit none
 
       integer  :: nwav, nazd
@@ -435,7 +435,7 @@
 !
   module ugwp_wmsdis_init
   
-     use ccpp_kinds,  only : kind_phys    
+     use ccpp_kind_types, only : kind_phys    
      use ugwp_common, only : arad, pi, pi2, hpscale, rhp, rhp2, rh4, omega2 
      use ugwp_common, only : bnv2max,  bnv2min, minvel 
      use ugwp_common, only : mkzmin,  mkz2min, mkzmax, mkz2max, ucrit => cdmin

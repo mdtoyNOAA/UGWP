@@ -11,7 +11,7 @@ module  cires_ugwpv1_module
 !...................................................................................
 !
 !
-    use  ccpp_kinds,        only : kind_phys
+    use  ccpp_kind_types,   only : kind_phys
     use  ugwp_common,       only : arad, pi, pi2, hpscale, rhp, rhp2, rh4, rhp4, khp, hpskm 
     use  ugwp_wmsdis_init,  only : ilaunch, nslope, lhmet, lzmax, lzmin, lzstar   
     use  ugwp_wmsdis_init,  only : tau_min, tamp_mpa   
@@ -327,7 +327,7 @@ module  cires_ugwpv1_module
         
    subroutine ngwflux_update(im, tau_ddd, xlatd, rain, tau_ngw)
     
-       use ccpp_kinds, only: kind_phys
+       use ccpp_kind_types, only: kind_phys
        implicit none
 
 !input

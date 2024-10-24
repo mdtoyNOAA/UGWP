@@ -26,10 +26,10 @@ contains
 !      oct 2020  Diagnostics of "tauabs, wrms, trms" is taken out
 ! --------------------------------------------------------------------------------
 !
-      use ccpp_kinds,          only : kind_phys
+      use ccpp_kind_types,    only : kind_phys
 
-      use  mpas_log,           only : mpas_log_write
-      use  mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
+      use mpas_log,           only : mpas_log_write
+      use mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
 
       use cires_ugwpv1_module,only :  krad, kvg, kion, ktg, iPr_ktgw, Pr_kdis, Pr_kvkt
 
