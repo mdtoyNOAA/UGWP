@@ -25,12 +25,13 @@ use cires_ugwpv1_solv2,  only: cires_ugwpv1_ngw_solv2
 contains
 
 
-subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1tau,ddy_j2tau) 
+subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,ntau_d1y,ugwp_taulat, &
+                            jindx1_tau,jindx2_tau,ddy_j1tau,ddy_j2tau) 
 
    use ugwp_common
    use mpas_atmphys_constants, only : P0
    use mpas_constants, only : pii, gravity, omega, a, cp, rgas, rv_moist=>rv
-   use cires_tauamf_data,   only:  cires_indx_ugwp, read_tau_amf, tau_limb, days_limb, ugwp_taulat
+   use cires_tauamf_data,   only:  cires_indx_ugwp
 
    implicit none
 
@@ -39,6 +40,8 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
    real(kind=kind_phys), intent(in) :: dtp     ! physics time step
    real(kind=kind_phys), dimension(:), intent(in) :: rdzw ! inverse delta-zeta at u-levels
    real(kind=kind_phys), dimension(:), intent(in) :: dzu  ! delta-zeta at w-levels
+   integer, intent(in) :: ntau_d1y
+   real(kind=kind_phys), dimension(:), intent(in) :: ugwp_taulat
    integer, dimension(:), intent(inout) :: jindx1_tau, jindx2_tau
    real(kind=kind_phys), dimension(:), intent(inout) :: ddy_j1tau, ddy_j2tau
 
@@ -106,18 +109,17 @@ subroutine ugwpv1_ngw_init (lat_r,levs,dtp,rdzw,dzu,jindx1_tau,jindx2_tau,ddy_j1
 
    call cires_ugwpv1_init (levs, zu, p0_std, dtp)
 
-   ! Read in tau_amf (momentum flux) for NGW
-   call read_tau_amf()
-
    ! Calculate spatial interpolation weights for NGW tau_amf
-   call cires_indx_ugwp(pi,lat_r,jindx1_tau,jindx2_tau,ddy_j1tau,ddy_j2tau)
+   call cires_indx_ugwp(pi,lat_r,ntau_d1y,ugwp_taulat,               &
+                        jindx1_tau,jindx2_tau,ddy_j1tau,ddy_j2tau)
 
 end subroutine ugwpv1_ngw_init
 
 
 subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,     &
                 jindx1_tau,jindx2_tau,r_DoY,kdt,dtp,ugrs,vgrs,          &
-                tgrs,q1,prsl,prslk,prsi,zl,zi,rublten,rvblten,rthblten, &
+                tgrs,q1,prsl,prslk,prsi,zl,zi,ntau_d2t,days_limb,       &
+                tau_limb,rublten,rvblten,rthblten,                      &
                 ugwp_diags,dudt_ngw,dvdt_ngw,dtdt_ngw,its,ite,levs)
 
    use ugwp_common
@@ -149,8 +151,11 @@ subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,     &
 
    logical, intent(in) :: ugwp_diags
 
+   integer, intent(in) :: ntau_d2t
+   real(kind=kind_phys), intent(in) :: days_limb(:), tau_limb(:,:)
+
    real(kind=kind_phys), intent(out), optional :: dudt_ngw(:,:),dvdt_ngw(:,:),  &
-                                                    dtdt_ngw(:,:)
+                                                  dtdt_ngw(:,:)
 
    real(kind=kind_phys), intent(inout) :: rublten(:,:),rvblten(:,:),rthblten(:,:)
 
@@ -188,7 +193,8 @@ subroutine ugwpv1_ngw_run(xlatd,raincv,rainncv,ddy_j1tau,ddy_j2tau,     &
 
    ! Interpolate NGW sources 'tau_amf' in space and time
    call tau_amf_interp(im, r_DoY, jindx1_tau, jindx2_tau,  &
-                       ddy_j1tau, ddy_j2tau, tau_amf)
+                       ddy_j1tau, ddy_j2tau, ntau_d2t,     &
+                       days_limb, tau_limb, tau_amf)
 
 
    !==================================================================

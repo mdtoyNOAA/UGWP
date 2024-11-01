@@ -304,8 +304,6 @@ module  cires_ugwpv1_module
 ! deallocate sources/spectra & some diagnostics need to find where "deaalocate them"
 ! before "end" of the FV3GFS
 !
-    use  cires_tauamf_data, only : ugwp_taulat,tau_limb,days_limb
-
     implicit none
 !
 !   deallocate arrays employed in ugwpv1-ngw subroutines
@@ -316,9 +314,6 @@ module  cires_ugwpv1_module
    if (allocated (kion)) deallocate (kion)
    if (allocated (zkm)) deallocate (zkm)
    if (allocated (pmb)) deallocate (pmb)
-   if (allocated (ugwp_taulat))  deallocate(ugwp_taulat)
-   if (allocated (tau_limb)) deallocate (tau_limb)
-   if (allocated (days_limb)) deallocate(days_limb)
  
    end subroutine cires_ugwp_dealloc
 

@@ -6,62 +6,12 @@ use ccpp_kind_types, only: kind_phys
 !...........................................................................................
 implicit none
 
-   integer           :: ntau_d1y, ntau_d2t  
-   real(kind=kind_phys), allocatable :: ugwp_taulat(:)
-   real(kind=kind_phys), allocatable :: tau_limb(:,:), days_limb(:)
-   logical           :: flag_alloctau = .false.          
-   character(len=255):: ugwp_taufile =  'ugwp_limb_tau.nc' 
-
-   public :: read_tau_amf, cires_indx_ugwp, tau_amf_interp 
+public :: cires_indx_ugwp, tau_amf_interp
 
 contains
   
-    subroutine read_tau_amf()
-  
-    use  netcdf
-    use  mpas_log,           only : mpas_log_write
-    use  mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
-    integer :: ncid,  iernc, vid, dimid, status         
-    integer :: k
-    
-!
-      
-      iernc=NF90_OPEN(trim(ugwp_taufile), nf90_nowrite, ncid)
-     
-      if(iernc.ne.0) then         
-          call mpas_log_write('read_tau_amf: cannot open file_limb_tab &
-                               &data-file '//trim(ugwp_taufile), messageType=MPAS_LOG_CRIT) 
-      else
-         status = nf90_inq_dimid(ncid, "lat", DimID)
-         status = nf90_inquire_dimension(ncid, DimID,  len =ntau_d1y )
-         status = nf90_inq_dimid(ncid, "days", DimID)
-         status = nf90_inquire_dimension(ncid, DimID,  len =ntau_d2t )
-       
-         call mpas_log_write('Dimensions of tau_ngw ugwp-v1 $i $i',           &
-                              intArgs=(/ntau_d1y,ntau_d2t/),masterOnly=.true.)
-         if (ntau_d2t .le. 0 .or. ntau_d1y .le. 0) then 
-            call mpas_log_write('ugwp-v1 tau-file='//trim(ugwp_taufile))
-            call mpas_log_write('  ugwp-v1:  ntau_d2t= $i, ntau_d1y=$i',      &
-                     intArgs=(/ntau_d2t,ntau_d1y/), messageType=MPAS_LOG_CRIT)
-         endif
- 
-         if (.not.allocated(ugwp_taulat))  allocate (ugwp_taulat(ntau_d1y ))
-         if (.not.allocated(days_limb))    allocate (days_limb(ntau_d2t))
-         if (.not.allocated(tau_limb))     allocate (tau_limb(ntau_d1y, ntau_d2t )) 
-              
-         iernc = nf90_inq_varid( ncid, 'DAYS', vid )
-         iernc = nf90_get_var( ncid, vid, days_limb)
-         iernc = nf90_inq_varid( ncid, 'LATS', vid )
-         iernc = nf90_get_var( ncid, vid, ugwp_taulat)
-         iernc = nf90_inq_varid( ncid, 'ABSMF', vid )
-         iernc = nf90_get_var( ncid, vid, tau_limb)
-         iernc = nf90_close(ncid)
-      endif    
-
-    end subroutine read_tau_amf  
-
-  
-    subroutine cires_indx_ugwp (pi,lat_r,j1_tau,j2_tau,w1_j1tau,w2_j2tau)
+    subroutine cires_indx_ugwp (pi,lat_r,ntau_d1y,ugwp_taulat,       &
+                                j1_tau,j2_tau,w1_j1tau,w2_j2tau)
      
     use ccpp_kind_types, only: kind_phys
     use ugwp_common, only: rad_to_deg
@@ -70,6 +20,8 @@ contains
     
       real(kind=kind_phys) ,   intent(in)                   ::  pi
       real(kind=kind_phys) ,   dimension(:), intent(in)     ::  lat_r    ! latitude in radians
+      integer, intent(in) :: ntau_d1y
+      real(kind=kind_phys), dimension(:), intent(in) :: ugwp_taulat
            
       integer, dimension(:), intent(inout)                  ::  j1_tau,   j2_tau
       real(kind=kind_phys) ,   dimension(:), intent(inout)  ::  w1_j1tau, w2_j2tau
@@ -104,7 +56,8 @@ contains
     end subroutine cires_indx_ugwp   
 
     
-    subroutine tau_amf_interp(im,fddd,j1_tau,j2_tau,ddy_j1,ddy_j2,tau_ddd)    
+    subroutine tau_amf_interp(im,fddd,j1_tau,j2_tau,ddy_j1,ddy_j2,ntau_d2t, &
+                              days_limb,tau_limb,tau_ddd)
     use ccpp_kind_types, only: kind_phys         
     use  mpas_log,           only : mpas_log_write
     use  mpas_derived_types, only : MPAS_LOG_ERR, MPAS_LOG_CRIT
@@ -116,6 +69,8 @@ contains
       
     real(kind=kind_phys), intent(in),  dimension(im) ::  ddy_j1, ddy_j2
     integer             , intent(in),  dimension(im) ::  j1_tau,j2_tau        
+    integer, intent(in)              :: ntau_d2t
+    real(kind=kind_phys), intent(in) :: days_limb(:), tau_limb(:,:)
 !ouput    
     real(kind=kind_phys), intent(out), dimension(im) ::  tau_ddd
 !locals
