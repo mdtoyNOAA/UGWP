@@ -212,6 +212,8 @@ module  cires_ugwpv1_module
    launch_level = max(k-1, 5)    ! above 5-layers from the surface
    call mpas_log_write('cires_ugwpv1 klev_ngw = $i   $i Pa',         &
            intArgs=(/launch_level,nint(pmb(launch_level))/),masterOnly=.true.)
+   call mpas_log_write('cires_ugwpv1 knob_ugwp_tauamp = $r',         &
+           realArgs=(/knob_ugwp_tauamp/),masterOnly=.true.)
 !
 ! Part-1 :init_global_gwdis               again "damn"-con_p
 !
